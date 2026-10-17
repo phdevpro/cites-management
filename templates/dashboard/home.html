@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load cites %}
+{% block content %}
+<div class="d-flex flex-wrap gap-2 mb-4">
+  <a class="btn btn-success" href="{% url 'declarations:new_birth' %}"><i class="bi bi-egg"></i> Denuncia nascita</a>
+  <a class="btn btn-outline-secondary" href="{% url 'declarations:new_death' %}"><i class="bi bi-x-circle"></i> Decesso</a>
+  <a class="btn btn-outline-primary" href="{% url 'declarations:new_transfer' %}"><i class="bi bi-arrow-left-right"></i> Cessione</a>
+  <a class="btn btn-outline-dark" href="{% url 'importer:index' %}"><i class="bi bi-upload"></i> Importa archivio</a>
+</div>
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card mb-4"><div class="card-body">
+      <h2 class="h5"><i class="bi bi-alarm"></i> Scadenze e avvisi</h2>
+      {% for a in alerts %}
+        <a href="{{ a.url }}" class="d-block text-decoration-none alert alert-{{ a.level }} py-2 mb-2">
+          <strong>{{ a.title }}</strong>
+          {% if a.due %}<span class="float-end">{% if a.days_left < 0 %}scaduta da {{ a.days_left|absval }} gg{% else %}{{ a.days_left }} gg ({{ a.due|date:"d/m/Y" }}){% endif %}</span>{% endif %}
+          <br><small>{{ a.detail }}</small>
+        </a>
+      {% empty %}<p class="text-muted mb-0">Nessuna scadenza aperta. 👍</p>{% endfor %}
+    </div></div>
+    <div class="card"><div class="card-body">
+      <h2 class="h5">Ultime pratiche</h2>
+      <table class="table table-sm mb-0">
+        {% for d in recent %}
+        <tr><td><a href="{{ d.get_absolute_url }}">{{ d.get_kind_display }}</a></td><td>{{ d.event_date|date:"d/m/Y" }}</td>
+            <td>{% for i in d.items.all %}{{ i.quantity }}× <em>{{ i.specimen.species }}</em>{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+            <td><span class="badge bg-{{ d.status|status_color }}">{{ d.get_status_display }}</span></td></tr>
+        {% empty %}<tr><td class="text-muted">Nessuna pratica.</td></tr>{% endfor %}
+      </table>
+    </div></div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card mb-4"><div class="card-body">
+      <div class="row text-center">
+        <div class="col-6 mb-3"><div class="stat text-success">{{ stats.alive_total }}</div><small>detenuti</small></div>
+        <div class="col-6 mb-3"><div class="stat">{{ stats.born_this_year }}</div><small>nati quest'anno</small></div>
+        <div class="col-6"><div class="stat text-secondary">{{ stats.dead_this_year }}</div><small>deceduti</small></div>
+        <div class="col-6"><div class="stat text-primary">{{ stats.transferred_this_year }}</div><small>ceduti</small></div>
+      </div>
+    </div></div>
+    <div class="card"><div class="card-body">
+      <h2 class="h6">Per specie</h2>
+      <table class="table table-sm mb-0">
+        {% for s in stats.by_species %}<tr><td><em>{{ s.species__scientific_name }}</em></td><td><span class="badge bg-{{ s.species__eu_annex|annex_color }}">All. {{ s.species__eu_annex|default:"–" }}</span></td><td class="text-end">{{ s.n }}</td></tr>
+        {% empty %}<tr><td class="text-muted">Nessun esemplare. <a href="{% url 'registry:specimen_add' %}">Aggiungi</a> o <a href="{% url 'importer:index' %}">importa</a>.</td></tr>{% endfor %}
+      </table>
+    </div></div>
+  </div>
+</div>
+{% endblock %}

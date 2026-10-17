@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3"><h1 class="h4">Pagamenti diritti speciali di prelievo</h1><a class="btn btn-success" href="{% url 'declarations:payment_create' %}">+ Nuovo</a></div>
+<div class="card"><table class="table mb-0">
+<thead><tr><th>Data</th><th>Codice</th><th>Importo</th><th>Riferimento</th><th>Causale</th><th>Pratica</th><th></th></tr></thead>
+{% for p in object_list %}<tr><td><a href="{% url 'declarations:payment_edit' p.pk %}">{{ p.paid_on|date:"d/m/Y" }}</a></td><td>{{ p.fee_type.code }}</td><td>€ {{ p.amount }}</td><td><small>{{ p.reference }}</small></td><td>{{ p.description }}</td>
+<td>{% if p.declaration %}<a href="{{ p.declaration.get_absolute_url }}">{{ p.declaration.kind }} {{ p.declaration.event_date|date:"d/m/Y" }}</a>{% endif %}</td><td>{% if p.receipt %}<a href="{{ p.receipt.url }}" target="_blank"><i class="bi bi-receipt"></i></a>{% endif %}</td></tr>
+{% empty %}<tr><td colspan="7" class="text-muted">Nessun pagamento.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

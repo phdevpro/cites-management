@@ -1,0 +1,6 @@
+{% if t %}<ul><li><a href="{{ t.node.get_absolute_url }}">{{ t.node }}</a> <small class="text-muted">{{ t.node.get_sex_display }} {{ t.node.markings_label }}</small>
+  {% if t.father or t.mother %}
+    {% if t.father %}{% include "registry/_pedigree_node.html" with t=t.father %}{% endif %}
+    {% if t.mother %}{% include "registry/_pedigree_node.html" with t=t.mother %}{% endif %}
+  {% elif t.node.breeding_group %}<ul><li class="text-muted">Gruppo riproduttore: {{ t.node.breeding_group }}</li></ul>{% endif %}
+</li></ul>{% endif %}

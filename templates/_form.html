@@ -1,0 +1,4 @@
+{% for e in form.non_field_errors %}<div class="alert alert-danger">{{ e }}</div>{% endfor %}
+<div class="row">
+{% for field in form %}{% include "_field.html" with col="col-md-6" %}{% endfor %}
+</div>

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row g-4">
+<div class="col-lg-{% if creating %}12{% else %}7{% endif %}">
+<div class="card"><div class="card-body">
+  <h1 class="h4">{% if creating %}Nuovo detentore{% else %}Dati detentore{% endif %}</h1>
+  <p class="text-muted small">Questi dati compilano automaticamente le sezioni "Generalità denunciante" dei moduli.</p>
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    {% include "_form.html" %}
+    {% if site_form %}
+      <h2 class="h5 mt-3">Sito di detenzione</h2>
+      {% include "_form.html" with form=site_form %}
+    {% endif %}
+    <button class="btn btn-success">Salva</button>
+  </form>
+</div></div>
+</div>
+{% if not creating %}
+<div class="col-lg-5">
+  <div class="card mb-4"><div class="card-body">
+    <h2 class="h5">Siti di detenzione <a class="btn btn-sm btn-outline-success float-end" href="{% url 'accounts:site_create' %}">+ Aggiungi</a></h2>
+    <ul class="list-group list-group-flush">
+      {% for s in sites %}<li class="list-group-item"><a href="{% url 'accounts:site_edit' s.pk %}">{{ s.name|default:"Sito" }}</a> – {{ s.full_address }} {% if s.is_default %}<span class="badge bg-success">predefinito</span>{% endif %}
+        {% if s.art54_submitted_on %}<br><small class="text-muted">Art. 54: {{ s.art54_submitted_on|date:"d/m/Y" }} prot. {{ s.art54_protocol }}</small>{% endif %}</li>
+      {% empty %}<li class="list-group-item text-muted">Nessun sito.</li>{% endfor %}
+    </ul>
+  </div></div>
+  <div class="card"><div class="card-body">
+    <h2 class="h5">Utenti con accesso</h2>
+    <ul class="list-group list-group-flush mb-3">
+      {% for m in members %}<li class="list-group-item">{{ m.user.username }} <span class="badge bg-secondary">{{ m.get_role_display }}</span></li>{% endfor %}
+    </ul>
+    {% if current_membership.role == "owner" %}
+    <form method="post" action="{% url 'accounts:member_invite' %}" class="row g-2">{% csrf_token %}
+      <div class="col-6">{{ invite_form.username }}</div>
+      <div class="col-4">{{ invite_form.role }}</div>
+      <div class="col-2"><button class="btn btn-outline-success w-100">+</button></div>
+    </form>
+    {% endif %}
+  </div></div>
+</div>
+{% endif %}
+</div>
+{% endblock %}
+{% block scripts %}{% include "_bootstrapify.html" %}{% endblock %}

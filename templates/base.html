@@ -1,0 +1,72 @@
+{% load static %}<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}CITES Manager{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="{% static 'app.css' %}" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-success mb-4">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="{% url 'dashboard:home' %}"><i class="bi bi-shield-check"></i> CITES Manager</a>
+    {% if user.is_authenticated %}
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav"><span class="navbar-toggler-icon"></span></button>
+    <div class="collapse navbar-collapse" id="nav">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item"><a class="nav-link" href="{% url 'registry:specimen_list' %}">Esemplari</a></li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Nuova pratica</a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{% url 'declarations:new_birth' %}"><i class="bi bi-egg"></i> Nascita</a></li>
+            <li><a class="dropdown-item" href="{% url 'declarations:new_death' %}"><i class="bi bi-x-circle"></i> Decesso</a></li>
+            <li><a class="dropdown-item" href="{% url 'declarations:new_transfer' %}"><i class="bi bi-arrow-left-right"></i> Cessione / trasferimento</a></li>
+            <li><a class="dropdown-item" href="{% url 'declarations:new_loss' %}"><i class="bi bi-question-circle"></i> Smarrimento / fuga / furto</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{% url 'registry:specimen_add' %}"><i class="bi bi-plus-circle"></i> Esemplari detenuti / acquisiti</a></li>
+          </ul>
+        </li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'declarations:list' %}">Denunce</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'registry:document_list' %}">Documenti</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'registry:register' %}">Registro C/S</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'registry:counterparty_list' %}">Controparti</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'declarations:payments' %}">Pagamenti</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'importer:index' %}"><i class="bi bi-upload"></i> Importa</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'dashboard:guide' %}">Guida</a></li>
+      </ul>
+      <ul class="navbar-nav">
+        {% if my_memberships|length > 1 %}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"><i class="bi bi-building"></i> {{ current_keeper }}</a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            {% for m in my_memberships %}
+            <li><form method="post" action="{% url 'accounts:switch_keeper' m.keeper_id %}">{% csrf_token %}
+              <button class="dropdown-item {% if m.keeper_id == current_keeper.pk %}active{% endif %}">{{ m.keeper }} <small class="text-muted">({{ m.get_role_display }})</small></button></form></li>
+            {% endfor %}
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{% url 'accounts:keeper_create' %}">+ Nuovo detentore</a></li>
+          </ul>
+        </li>
+        {% endif %}
+        <li class="nav-item"><a class="nav-link" href="{% url 'accounts:keeper_edit' %}"><i class="bi bi-person-badge"></i> {% if my_memberships|length <= 1 %}{{ current_keeper|default:"Detentore" }}{% else %}Profilo{% endif %}</a></li>
+        {% if user.is_staff %}<li class="nav-item"><a class="nav-link" href="{% url 'admin:index' %}">Admin</a></li>{% endif %}
+        <li class="nav-item"><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn nav-link">Esci</button></form></li>
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</nav>
+<main class="container-xl pb-5">
+  {% for message in messages %}
+  <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  {% endfor %}
+  {% block content %}{% endblock %}
+</main>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+<script>document.body.addEventListener('htmx:configRequest', e => { e.detail.headers['X-CSRFToken'] = '{{ csrf_token }}'; });</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

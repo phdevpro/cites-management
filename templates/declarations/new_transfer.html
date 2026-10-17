@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card"><div class="card-body">
+<h1 class="h4">Cessione / trasferimento di proprietà</h1>
+<ul class="small text-muted">
+  <li><strong>All. A</strong>: viene preparato il modello SCT3 per la richiesta del certificato di spostamento (art. 9.2 Reg. 338/97). Occorrono ricevuta del diritto W802 e documenti d'identità; gli esemplari restano in carico finché il certificato non è rilasciato.</li>
+  <li><strong>All. B</strong>: viene preparata la dichiarazione di cessione e gli esemplari sono scaricati subito.</li>
+</ul>
+<form method="post">{% csrf_token %}
+  {% for e in form.non_field_errors %}<div class="alert alert-danger">{{ e }}</div>{% endfor %}
+  <div class="row">
+    {% include "_field.html" with field=form.counterparty col="col-md-6" %}
+    {% include "_field.html" with field=form.transfer_date col="col-md-3" %}
+    {% include "_field.html" with field=form.is_sale col="col-md-3 pt-4" %}
+  </div>
+  <p class="small"><a href="{% url 'registry:counterparty_create' %}?next={{ request.get_full_path|urlencode }}">+ Nuova controparte</a></p>
+  <h2 class="h6">Esemplari</h2>
+  {% for e in form.specimens.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+  <table class="table table-sm"><thead><tr><th></th><th>Esemplare</th><th>Marcatura</th><th>Disponibili</th><th>Da cedere</th></tr></thead>
+  {% for sp in form.fields.specimens.queryset %}
+  <tr><td><input class="form-check-input" type="checkbox" name="specimens" value="{{ sp.pk }}" {% if sp.pk|stringformat:"s" in form.specimens.value or sp.pk in form.specimens.value %}checked{% endif %}></td>
+  <td><em>{{ sp.species }}</em> {{ sp.name }} <span class="badge bg-light text-dark">All. {{ sp.species.eu_annex }}</span></td><td><small>{{ sp.markings_label }}</small></td><td>{{ sp.quantity }}</td>
+  <td><input class="form-control form-control-sm" style="width:6rem" type="number" min="1" max="{{ sp.quantity }}" name="qty_{{ sp.pk }}" value="1"></td></tr>
+  {% endfor %}</table>
+  <button class="btn btn-primary">Prepara cessione</button>
+</form></div></div>
+{% endblock %}
+{% block scripts %}{% include "_bootstrapify.html" %}{% endblock %}

@@ -1,0 +1,254 @@
+[
+ {
+  "model": "species.species",
+  "pk": 1,
+  "fields": {
+   "scientific_name": "Testudo hermanni",
+   "common_name": "Testuggine di Hermann",
+   "eu_annex": "A",
+   "cites_appendix": "II",
+   "taxon_group": "reptile",
+   "is_testudo": true
+  }
+ },
+ {
+  "model": "species.species",
+  "pk": 2,
+  "fields": {
+   "scientific_name": "Testudo graeca",
+   "common_name": "Testuggine greca",
+   "eu_annex": "A",
+   "cites_appendix": "II",
+   "taxon_group": "reptile",
+   "is_testudo": true
+  }
+ },
+ {
+  "model": "species.species",
+  "pk": 3,
+  "fields": {
+   "scientific_name": "Testudo marginata",
+   "common_name": "Testuggine marginata",
+   "eu_annex": "A",
+   "cites_appendix": "II",
+   "taxon_group": "reptile",
+   "is_testudo": true
+  }
+ },
+ {
+  "model": "species.species",
+  "pk": 4,
+  "fields": {
+   "scientific_name": "Testudo horsfieldii",
+   "common_name": "Testuggine di Horsfield",
+   "eu_annex": "B",
+   "cites_appendix": "II",
+   "taxon_group": "reptile",
+   "is_testudo": true
+  }
+ },
+ {
+  "model": "species.species",
+  "pk": 5,
+  "fields": {
+   "scientific_name": "Testudo kleinmanni",
+   "common_name": "Testuggine egiziana",
+   "eu_annex": "A",
+   "cites_appendix": "I",
+   "taxon_group": "reptile",
+   "is_testudo": true
+  }
+ },
+ {
+  "model": "species.species",
+  "pk": 6,
+  "fields": {
+   "scientific_name": "Centrochelys sulcata",
+   "common_name": "Testuggine sulcata",
+   "eu_annex": "B",
+   "cites_appendix": "II",
+   "taxon_group": "reptile",
+   "is_testudo": false
+  }
+ },
+ {
+  "model": "species.species",
+  "pk": 7,
+  "fields": {
+   "scientific_name": "Chelonoidis carbonarius",
+   "common_name": "Testuggine dai piedi rossi",
+   "eu_annex": "B",
+   "cites_appendix": "II",
+   "taxon_group": "reptile",
+   "is_testudo": false
+  }
+ },
+ {
+  "model": "species.species",
+  "pk": 8,
+  "fields": {
+   "scientific_name": "Geochelone elegans",
+   "common_name": "Testuggine stellata indiana",
+   "eu_annex": "A",
+   "cites_appendix": "I",
+   "taxon_group": "reptile",
+   "is_testudo": false
+  }
+ },
+ {
+  "model": "species.species",
+  "pk": 9,
+  "fields": {
+   "scientific_name": "Python regius",
+   "common_name": "Pitone reale",
+   "eu_annex": "B",
+   "cites_appendix": "II",
+   "taxon_group": "reptile",
+   "is_testudo": false
+  }
+ },
+ {
+  "model": "species.species",
+  "pk": 10,
+  "fields": {
+   "scientific_name": "Boa constrictor",
+   "common_name": "Boa costrittore",
+   "eu_annex": "B",
+   "cites_appendix": "II",
+   "taxon_group": "reptile",
+   "is_testudo": false
+  }
+ },
+ {
+  "model": "species.species",
+  "pk": 11,
+  "fields": {
+   "scientific_name": "Boa constrictor occidentalis",
+   "common_name": "Boa argentino",
+   "eu_annex": "A",
+   "cites_appendix": "I",
+   "taxon_group": "reptile",
+   "is_testudo": false
+  }
+ },
+ {
+  "model": "species.species",
+  "pk": 12,
+  "fields": {
+   "scientific_name": "Iguana iguana",
+   "common_name": "Iguana verde",
+   "eu_annex": "B",
+   "cites_appendix": "II",
+   "taxon_group": "reptile",
+   "is_testudo": false
+  }
+ },
+ {
+  "model": "species.species",
+  "pk": 13,
+  "fields": {
+   "scientific_name": "Chamaeleo calyptratus",
+   "common_name": "Camaleonte velato",
+   "eu_annex": "B",
+   "cites_appendix": "II",
+   "taxon_group": "reptile",
+   "is_testudo": false
+  }
+ },
+ {
+  "model": "species.species",
+  "pk": 14,
+  "fields": {
+   "scientific_name": "Psittacus erithacus",
+   "common_name": "Pappagallo cenerino",
+   "eu_annex": "A",
+   "cites_appendix": "I",
+   "taxon_group": "bird",
+   "is_testudo": false
+  }
+ },
+ {
+  "model": "species.species",
+  "pk": 15,
+  "fields": {
+   "scientific_name": "Ara ararauna",
+   "common_name": "Ara gialloblu",
+   "eu_annex": "B",
+   "cites_appendix": "II",
+   "taxon_group": "bird",
+   "is_testudo": false
+  }
+ },
+ {
+  "model": "species.species",
+  "pk": 16,
+  "fields": {
+   "scientific_name": "Ara chloropterus",
+   "common_name": "Ara aliverdi",
+   "eu_annex": "B",
+   "cites_appendix": "II",
+   "taxon_group": "bird",
+   "is_testudo": false
+  }
+ },
+ {
+  "model": "species.species",
+  "pk": 17,
+  "fields": {
+   "scientific_name": "Amazona aestiva",
+   "common_name": "Amazzone fronteblu",
+   "eu_annex": "B",
+   "cites_appendix": "II",
+   "taxon_group": "bird",
+   "is_testudo": false
+  }
+ },
+ {
+  "model": "species.species",
+  "pk": 18,
+  "fields": {
+   "scientific_name": "Eclectus roratus",
+   "common_name": "Ecletto",
+   "eu_annex": "B",
+   "cites_appendix": "II",
+   "taxon_group": "bird",
+   "is_testudo": false
+  }
+ },
+ {
+  "model": "species.species",
+  "pk": 19,
+  "fields": {
+   "scientific_name": "Agapornis roseicollis",
+   "common_name": "Inseparabile roseicollo",
+   "eu_annex": "",
+   "cites_appendix": "",
+   "taxon_group": "bird",
+   "is_testudo": false
+  }
+ },
+ {
+  "model": "species.species",
+  "pk": 20,
+  "fields": {
+   "scientific_name": "Falco peregrinus",
+   "common_name": "Falco pellegrino",
+   "eu_annex": "A",
+   "cites_appendix": "I",
+   "taxon_group": "bird",
+   "is_testudo": false
+  }
+ },
+ {
+  "model": "species.species",
+  "pk": 21,
+  "fields": {
+   "scientific_name": "Dendrobates tinctorius",
+   "common_name": "Dendrobate tintorio",
+   "eu_annex": "B",
+   "cites_appendix": "II",
+   "taxon_group": "amphibian",
+   "is_testudo": false
+  }
+ }
+]

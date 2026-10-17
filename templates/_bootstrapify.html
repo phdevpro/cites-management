@@ -1,0 +1,5 @@
+<script>
+document.querySelectorAll('form input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not(.form-control), form textarea:not(.form-control)').forEach(el => el.classList.add('form-control'));
+document.querySelectorAll('form select:not(.form-select)').forEach(el => el.classList.add('form-select'));
+document.querySelectorAll('form input[type=checkbox]:not(.form-check-input)').forEach(el => el.classList.add('form-check-input'));
+</script>

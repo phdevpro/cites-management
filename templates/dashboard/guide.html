@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card"><div class="card-body">
+<h1 class="h4">Guida rapida agli adempimenti CITES</h1>
+<p class="text-muted">Riferimenti: L. 150/1992, Reg. (CE) 338/97 e 865/2006, D.M. 8/1/2002. Termini e importi vanno sempre verificati con il Servizio CITES territoriale.</p>
+<table class="table">
+<thead><tr><th>Evento</th><th>Modulo</th><th>Termine</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td>Nascita in cattività All. A</td><td>SCT1/A</td><td>10 gg dalla nascita</td><td>Estremi marcatura entro 45 gg; Testudo: nano microchip entro il 1° anno. Indicare documenti dei riproduttori o gruppo riproduttore.</td></tr>
+<tr><td>Nascita in cattività All. B</td><td>SCT1/B</td><td>10 gg</td><td>Marcatura consigliata; dichiarazione conformità art. 54 Reg. 865/2006.</td></tr>
+<tr><td>Decesso All. A</td><td>SCT5</td><td>tempestivo (art. 5 c.2 L.150/92)</td><td>Restituire i certificati degli esemplari deceduti.</td></tr>
+<tr><td>Cessione / spostamento All. A</td><td>SCT3 + richiesta certificato art. 9.2</td><td>prima dello spostamento</td><td>Diritto W802 (€ 15,49), documenti d'identità di cedente e cessionario. Gli esemplari si consegnano solo dopo il rilascio del certificato.</td></tr>
+<tr><td>Vendita commerciale All. A</td><td>Certificato art. 10 (CIC)</td><td>prima della vendita</td><td>Diritto W802.</td></tr>
+<tr><td>Cessione All. B</td><td>Dichiarazione di cessione</td><td>alla cessione</td><td>Prova di legale acquisizione per il cessionario.</td></tr>
+<tr><td>Smarrimento, fuga, furto, cambio sito</td><td>Comunicazione</td><td>tempestiva</td><td>In caso di furto allegare la denuncia alle autorità.</td></tr>
+<tr><td>Registro carico/scarico</td><td>EA / EB</td><td>15 gg dall'evento</td><td>Obbligatorio per chi cede/vende; vidimazione dell'ufficio CITES; conservare 10 anni.</td></tr>
+</tbody></table>
+<h2 class="h5">Flusso tipico</h2>
+<ol>
+<li>Registra l'evento (es. <em>Nuova pratica → Nascita</em>): l'app crea esemplari, registrazione di carico/scarico e bozza della denuncia con scadenza.</li>
+<li>Verifica i dati del modulo, genera il PDF, stampalo e firmalo.</li>
+<li>Invialo (PEC / raccomandata / a mano) con copia del documento d'identità e segna la pratica come <em>inviata</em>.</li>
+<li>Quando l'ufficio risponde registra il protocollo: verrà collegato agli esemplari e citato nei moduli successivi (es. SCT5).</li>
+</ol>
+</div></div>
+{% endblock %}

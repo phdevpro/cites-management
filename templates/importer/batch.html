@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load cites %}
+{% block content %}
+<h1 class="h4 mb-3">{{ batch }}</h1>
+<form class="mb-3"><select name="status" class="form-select w-auto" onchange="this.form.submit()"><option value="">Tutti</option>{% for v,l in statuses %}<option value="{{ v }}" {% if request.GET.status == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></form>
+<div class="card"><div class="table-responsive"><table class="table table-sm table-hover mb-0">
+<thead><tr><th>File</th><th>Anno</th><th>Tipo rilevato</th><th>Affidabilità</th><th>Estrazione</th><th>Stato</th></tr></thead>
+{% for f in files %}
+<tr><td><a href="{% url 'importer:review' f.pk %}">{{ f.original_path }}</a></td><td>{{ f.year_hint|default:"" }}</td>
+<td>{{ f.get_detected_kind_display }}</td>
+<td><div class="progress" style="width:80px;height:6px"><div class="progress-bar {% if f.confidence < 0.5 %}bg-warning{% endif %}" style="width:{% widthratio f.confidence 1 100 %}%"></div></div></td>
+<td><small>{{ f.method }}</small></td>
+<td><span class="badge bg-{{ f.status|status_color }}">{{ f.get_status_display }}</span></td></tr>
+{% endfor %}
+</table></div></div>
+{% endblock %}

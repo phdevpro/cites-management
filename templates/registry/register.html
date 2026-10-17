@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load cites %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <h1 class="h4 mb-0">Registro di carico e scarico</h1>
+  <div>
+    <a class="btn btn-outline-secondary" href="{% url 'registry:register_export' 'pdf' %}?type={{ register_type }}&year={{ request.GET.year }}" target="_blank"><i class="bi bi-printer"></i> PDF</a>
+    <a class="btn btn-outline-secondary" href="{% url 'registry:register_export' 'xlsx' %}?type={{ register_type }}&year={{ request.GET.year }}"><i class="bi bi-file-earmark-spreadsheet"></i> XLSX</a>
+  </div>
+</div>
+{% if not current_keeper.sells_specimens %}<div class="alert alert-info small">Il registro è obbligatorio per chi cede, vende o scambia esemplari (D.M. 8/1/2002). Le registrazioni vengono comunque tenute automaticamente come storico.</div>{% endif %}
+<form class="row g-2 mb-3">
+  <div class="col-auto"><select name="type" class="form-select" onchange="this.form.submit()">{% for v,l in types %}<option value="{{ v }}" {% if register_type == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+  <div class="col-auto"><select name="year" class="form-select" onchange="this.form.submit()"><option value="">Tutti gli anni</option>{% for y in years %}<option {% if request.GET.year == y.year|stringformat:"s" %}selected{% endif %}>{{ y.year }}</option>{% endfor %}</select></div>
+</form>
+<div class="card"><div class="table-responsive"><table class="table table-sm mb-0">
+<thead><tr><th>N.</th><th>Registrato</th><th>Evento</th><th>Mov.</th><th>Causale</th><th>Specie</th><th>Q.tà</th><th>Marcatura</th><th>Documento</th><th>Prov./Dest.</th><th>Rif.</th><th></th></tr></thead>
+{% for e in object_list %}
+<tr class="{% if e.is_late %}table-warning{% endif %}"><td>{{ e.number }}</td><td>{{ e.recorded_at|date:"d/m/Y" }}</td><td>{{ e.event_date|date:"d/m/Y" }}</td>
+<td><span class="badge bg-{{ e.direction|status_color }}">{{ e.get_direction_display }}</span></td><td>{{ e.get_cause_display }}</td>
+<td>{% if e.specimen %}<a href="{{ e.specimen.get_absolute_url }}"><em>{{ e.species }}</em></a>{% else %}<em>{{ e.species }}</em>{% endif %}</td><td>{{ e.quantity }}</td>
+<td><small>{{ e.marking }}</small></td><td><small>{{ e.document }}</small></td><td><small>{{ e.counterparty }}</small></td><td>{{ e.carico_ref.number|default:"" }}</td>
+<td>{% if current_membership.can_edit %}<a class="small" href="{% url 'registry:register_correction' e.pk %}">rettifica</a>{% endif %}</td></tr>
+{% if e.notes %}<tr><td></td><td colspan="11" class="small text-muted border-0 pt-0">{{ e.notes }}</td></tr>{% endif %}
+{% empty %}<tr><td colspan="12" class="text-muted">Nessuna registrazione.</td></tr>{% endfor %}
+</table></div></div>
+{% include "_pagination.html" %}
+<p class="small text-muted mt-2">Righe evidenziate: registrate oltre 15 gg dall'evento. Il registro è immodificabile; usare "rettifica".</p>
+{% endblock %}

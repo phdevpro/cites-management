@@ -1,0 +1,38 @@
+[project]
+name = "cites-management"
+version = "0.1.0"
+description = "Gestione denunce CITES (nascite, decessi, cessioni) per detentori italiani"
+readme = "README.md"
+authors = [
+    { name = "phdevpro", email = "info@phdevpro.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.1,<6",
+    "django-htmx>=1.29.0",
+    "django-simple-history>=3.13.0",
+    "gunicorn>=26.2.0",
+    "openpyxl>=3.1.5",
+    "pdfplumber>=0.11.10",
+    "psycopg[binary]>=3.3.6",
+    "pypdf>=6.21.0",
+    "python-dateutil>=2.9.0.post0",
+    "pyyaml>=6.0.3",
+    "reportlab>=5.0.1",
+    "whitenoise>=6.12.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-django>=4.14.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py"]
+testpaths = ["apps"]
+filterwarnings = ["ignore:No directory at:UserWarning"]

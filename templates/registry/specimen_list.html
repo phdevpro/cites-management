@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load cites %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Esemplari</h1>
+  <div>
+    <a class="btn btn-outline-success" href="{% url 'registry:specimen_add' %}">+ Detenuti / acquisiti</a>
+    <a class="btn btn-success" href="{% url 'declarations:new_birth' %}">+ Nascita</a>
+  </div>
+</div>
+<div class="row g-4">
+<div class="col-lg-9">
+<form class="row g-2 mb-3">
+  <div class="col-md-3"><select name="status" class="form-select" onchange="this.form.submit()">
+    <option value="all">Tutti gli stati</option>
+    {% for v, l in statuses %}<option value="{{ v }}" {% if request.GET.status == v or not request.GET.status and v == "alive" %}selected{% endif %}>{{ l }}</option>{% endfor %}
+  </select></div>
+  <div class="col-md-4"><select name="species" class="form-select" onchange="this.form.submit()">
+    <option value="">Tutte le specie</option>
+    {% for s in species_list %}<option value="{{ s.pk }}" {% if request.GET.species == s.pk|stringformat:"s" %}selected{% endif %}>{{ s }}</option>{% endfor %}
+  </select></div>
+  <div class="col-md-5"><input name="q" class="form-control" placeholder="Cerca nome, microchip, note…" value="{{ request.GET.q }}"></div>
+</form>
+<div class="card"><div class="table-responsive">
+<table class="table table-hover mb-0">
+  <thead><tr><th>Specie</th><th>Nome</th><th>N.</th><th>Sesso</th><th>Nascita</th><th>Marcatura</th><th>Stato</th></tr></thead>
+  <tbody>
+  {% for sp in object_list %}
+  <tr>
+    <td><a href="{{ sp.get_absolute_url }}"><em>{{ sp.species }}</em></a> <span class="badge bg-{{ sp.species.eu_annex|annex_color }}">{{ sp.species.eu_annex }}</span></td>
+    <td>{{ sp.name|default:"—" }}</td>
+    <td>{{ sp.quantity }}{% if sp.is_lot %} <span class="badge bg-light text-dark">lotto</span>{% endif %}</td>
+    <td>{{ sp.sex }}</td>
+    <td>{{ sp.birth_date|date:"d/m/Y"|default:"—" }}</td>
+    <td><small>{{ sp.markings_label|default:"—" }}</small></td>
+    <td><span class="badge bg-{{ sp.status|status_color }}">{{ sp.get_status_display }}</span></td>
+  </tr>
+  {% empty %}<tr><td colspan="7" class="text-muted">Nessun esemplare.</td></tr>{% endfor %}
+  </tbody>
+</table></div></div>
+{% include "_pagination.html" %}
+</div>
+<div class="col-lg-3">
+  <div class="card"><div class="card-body">
+    <h2 class="h6">Consistenza attuale</h2>
+    <table class="table table-sm mb-0">{% for t in totals %}<tr><td><em>{{ t.species__scientific_name }}</em></td><td class="text-end fw-bold">{{ t.n }}</td></tr>{% endfor %}</table>
+    <hr><a class="small" href="{% url 'importer:sheet_template' %}">Modello XLSX per import massivo</a>
+  </div></div>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card"><div class="card-body">
+  <h1 class="h4 mb-3">{{ title }}</h1>
+  {% if help %}<p class="text-muted">{{ help }}</p>{% endif %}
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    {% include "_form.html" %}
+    <button class="btn btn-success">Salva</button>
+    <a href="javascript:history.back()" class="btn btn-link">Annulla</a>
+  </form>
+</div></div>
+{% endblock %}
+{% block scripts %}{% include "_bootstrapify.html" %}{% endblock %}

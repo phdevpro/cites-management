@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load cites %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h5 mb-1">{{ f.original_path }}</h1>
+    <span class="badge bg-info">{{ f.get_detected_kind_display }}</span>
+    <span class="badge bg-light text-dark">affidabilità {% widthratio f.confidence 1 100 %}% · {{ f.method|default:"—" }}</span>
+    <span class="badge bg-{{ f.status|status_color }}">{{ f.get_status_display }}</span>
+  </div>
+  <div>
+    {% if prev_pk %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'importer:review' prev_pk %}">‹</a>{% endif %}
+    <a class="btn btn-sm btn-outline-secondary" href="{% url 'importer:batch' f.batch_id %}">Elenco</a>
+    {% if next_pk %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'importer:review' next_pk %}">›</a>{% endif %}
+  </div>
+</div>
+<div class="row g-4">
+<div class="col-lg-7">
+  {% if f.is_pdf %}<iframe class="pdf-frame" src="{% url 'importer:file' f.pk %}"></iframe>
+  {% elif f.is_image %}<img class="img-fluid border" src="{% url 'importer:file' f.pk %}">
+  {% else %}<a href="{% url 'importer:file' f.pk %}">Apri file</a>{% endif %}
+</div>
+<div class="col-lg-5">
+  {% for n in parsed.notes %}<div class="alert alert-warning py-1 small">{{ n }}</div>{% endfor %}
+  {% if f.error %}<div class="alert alert-danger small">{{ f.error }}</div>{% endif %}
+  {% if parsed.rows %}
+  <div class="card mb-3"><div class="card-body p-2"><h2 class="h6">Righe riconosciute</h2>
+    <table class="table table-sm small mb-0">{% for r in parsed.rows %}<tr>{% for k, v in r.items %}<td>{{ v }}</td>{% endfor %}</tr>{% endfor %}</table>
+  </div></div>
+  {% endif %}
+  {% if f.status == "done" or f.status == "archived" %}
+    <div class="alert alert-success">Già registrato.
+      {% if f.declaration %}<a href="{{ f.declaration.get_absolute_url }}">Vai alla pratica</a>{% endif %}
+      {% if f.cites_document %}<a href="{% url 'registry:document_edit' f.cites_document_id %}">Vai al documento</a>{% endif %}
+    </div>
+  {% endif %}
+  <div class="card"><div class="card-body">
+  <form method="post">{% csrf_token %}
+    {% for e in form.non_field_errors %}<div class="alert alert-danger">{{ e }}</div>{% endfor %}
+    {% include "_field.html" with field=form.action %}
+    <div data-for="birth death">{% include "_field.html" with field=form.species %}{% include "_field.html" with field=form.quantity %}{% include "_field.html" with field=form.event_date %}{% include "_field.html" with field=form.signed_on %}</div>
+    <div data-for="birth">{% include "_field.html" with field=form.breeding_group %}</div>
+    <div data-for="death">{% include "_field.html" with field=form.specimen %}
+      {% if death_candidates %}<p class="small text-muted">Lotti vivi della specie: {% for s in death_candidates %}{{ s }}{% if not forloop.last %}, {% endif %}{% endfor %}. Senza esemplare collegato la pratica viene solo archiviata.</p>{% endif %}
+    </div>
+    <div data-for="birth death">{% include "_field.html" with field=form.protocol_number %}{% include "_field.html" with field=form.protocol_date %}</div>
+    <div data-for="document">{% include "_field.html" with field=form.doc_type %}{% include "_field.html" with field=form.number %}{% include "_field.html" with field=form.issued_on %}{% include "_field.html" with field=form.specimens %}</div>
+    <div data-for="document payment archive">{% include "_field.html" with field=form.link_declaration %}
+      {% if candidates %}<p class="small text-muted">Possibili pratiche: {% for c in candidates %}<a href="#" onclick="document.getElementById('id_link_declaration').value='{{ c.pk }}';return false">{{ c }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+    </div>
+    <div data-for="payment">{% include "_field.html" with field=form.fee_type %}{% include "_field.html" with field=form.amount %}{% include "_field.html" with field=form.paid_on %}</div>
+    <div data-for="death document payment">{% include "_field.html" with field=form.notes %}</div>
+    {% if current_membership.can_edit %}
+    <button class="btn btn-success">Conferma e registra</button>
+    <button name="reanalyze" value="1" class="btn btn-link" formnovalidate>Rianalizza</button>
+    {% endif %}
+  </form>
+  </div></div>
+  {% if f.text %}<details class="mt-3"><summary class="small">Testo estratto</summary><pre class="small bg-white p-2 border" style="max-height:300px;overflow:auto;white-space:pre-wrap">{{ f.text|truncatechars:6000 }}</pre></details>{% endif %}
+</div>
+</div>
+{% endblock %}
+{% block scripts %}
+{% include "_bootstrapify.html" %}
+<script>
+const sel = document.getElementById('id_action');
+function sync() { document.querySelectorAll('[data-for]').forEach(el => el.style.display = el.dataset.for.split(' ').includes(sel.value) ? '' : 'none'); }
+sel.addEventListener('change', sync); sync();
+</script>
+{% endblock %}

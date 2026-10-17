@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% load cites %}
+{% block content %}
+<form method="post">{% csrf_token %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <h1 class="h4 mb-0">{{ spec.title }}</h1>
+  <div>
+    <button name="reset" value="1" class="btn btn-outline-warning" formnovalidate onclick="return confirm('Ricalcolare tutti i campi dai dati in archivio?')">Ricompila dai dati</button>
+    <button class="btn btn-outline-success">Salva</button>
+    <button name="generate" value="1" class="btn btn-success">Salva e genera PDF</button>
+  </div>
+</div>
+<div class="row g-4">
+<div class="col-lg-6">
+  <div class="card mb-4"><div class="card-body">
+    <h2 class="h6">Pratica</h2>
+    <div class="row">{% for field in meta_form %}{% include "_field.html" with col="col-md-6" %}{% endfor %}</div>
+  </div></div>
+  <div class="card"><div class="card-body">
+    <h2 class="h6">Campi del modulo</h2>
+    {% for f, value in fields %}
+    <div class="mb-2">
+      {% if f.kind == "bool" %}
+        <div class="form-check"><input class="form-check-input" type="checkbox" name="f__{{ f.key }}" id="f_{{ f.key }}" {% if value %}checked{% endif %}><label class="form-check-label" for="f_{{ f.key }}">{{ f.label }}</label></div>
+      {% else %}
+        <label class="form-label small mb-0" for="f_{{ f.key }}">{{ f.label }}</label>
+        {% if f.kind == "textarea" %}<textarea class="form-control form-control-sm" rows="2" name="f__{{ f.key }}" id="f_{{ f.key }}">{{ value }}</textarea>
+        {% else %}<input class="form-control form-control-sm" name="f__{{ f.key }}" id="f_{{ f.key }}" value="{{ value }}">{% endif %}
+        {% if f.help %}<div class="form-text">{{ f.help }}</div>{% endif %}
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div></div>
+</div>
+<div class="col-lg-6">
+  {% if spec.row_columns %}
+  <div class="card mb-4"><div class="card-body">
+    <h2 class="h6">Righe esemplari <small class="text-muted">({{ rows_per_page }} per pagina: righe in più generano copie aggiuntive del modulo)</small></h2>
+    <input type="hidden" name="n_rows" value="{{ rows|length }}">
+    <div class="table-responsive"><table class="table table-sm rows-table">
+      <thead><tr>{% for col, label in spec.row_columns %}<th class="small">{{ label }}</th>{% endfor %}<th></th></tr></thead>
+      {% for row in rows %}{% with i=forloop.counter0 %}
+      <tr>{% for col, label in spec.row_columns %}<td><input class="form-control form-control-sm" name="r__{{ i }}__{{ col }}" value="{{ row|get:col }}"></td>{% endfor %}
+      <td><input type="checkbox" class="form-check-input" name="del__{{ i }}" title="Elimina riga"></td></tr>
+      {% endwith %}{% endfor %}
+    </table></div>
+    <button name="add_row" value="1" class="btn btn-sm btn-outline-secondary">+ Riga</button>
+  </div></div>
+  {% endif %}
+  <div class="card"><div class="card-body">
+    <h2 class="h6">Anteprima (ultimo salvataggio)</h2>
+    <iframe class="pdf-frame" src="{% url 'declarations:preview' decl.pk %}"></iframe>
+  </div></div>
+</div>
+</div>
+</form>
+{% endblock %}
+{% block scripts %}{% include "_bootstrapify.html" %}{% endblock %}

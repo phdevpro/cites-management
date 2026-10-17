@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="h4 mb-3">Importa documenti precedenti</h1>
+<div class="row g-4">
+<div class="col-lg-7">
+  <div class="card mb-4"><div class="card-body">
+    <p class="small text-muted">Carica i PDF delle denunce già presentate (SCT1/A, SCT1/B, SCT5, SCT3), le risposte dell'ufficio (es. <code>DC_1234 (10.100-1) DN n. 9 Testudo hermanni.pdf</code>), certificati, ricevute e scansioni. L'app riconosce il tipo, estrae i dati (campi modulo, testo o OCR) e ti propone cosa registrare: verifichi ogni file prima che entri in archivio.</p>
+    <form method="post" enctype="multipart/form-data">{% csrf_token %}
+      {% include "_form.html" %}
+      <button class="btn btn-success">Carica e analizza</button>
+    </form>
+    <p class="small text-muted mt-3 mb-0">Cartella intera da riga di comando: <code>uv run manage.py import_archive "CITES Denuncia Tartarughe" --keeper {{ current_keeper.pk }}</code></p>
+  </div></div>
+  <div class="card"><div class="card-body">
+    <h2 class="h6">Esemplari da foglio Excel (consistenza iniziale)</h2>
+    <form method="post" enctype="multipart/form-data" action="{% url 'importer:sheet_import' %}" class="row g-2">{% csrf_token %}
+      <div class="col-md-8">{{ sheet_form.file }}</div><div class="col-md-4"><button class="btn btn-outline-success w-100">Importa</button></div>
+    </form>
+    <a class="small" href="{% url 'importer:sheet_template' %}">Scarica il modello XLSX</a>
+  </div></div>
+</div>
+<div class="col-lg-5"><div class="card"><div class="card-body">
+  <h2 class="h6">Importazioni {% if pending %}<span class="badge bg-warning text-dark">{{ pending }} file da verificare</span>{% endif %}</h2>
+  <ul class="list-group list-group-flush">{% for b in batches %}<li class="list-group-item"><a href="{% url 'importer:batch' b.pk %}">{{ b }}</a> <small class="text-muted">{{ b.files.count }} file</small></li>{% empty %}<li class="list-group-item text-muted">Nessuna importazione.</li>{% endfor %}</ul>
+</div></div></div>
+</div>
+{% endblock %}
+{% block scripts %}{% include "_bootstrapify.html" %}{% endblock %}

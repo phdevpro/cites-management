@@ -1,0 +1,7 @@
+[
+ {"model": "declarations.feetype", "pk": 1, "fields": {"code": "W802", "description": "Richiesta certificato CITES artt. 8 e 9 Reg. CE 338/97 (art. 10 / spostamento)", "amount": "15.49"}},
+ {"model": "declarations.feetype", "pk": 2, "fields": {"code": "U669", "description": "Denuncia di detenzione (artt. 5 c.1 e 5-bis c.4 L. 150/92)", "amount": "20.00"}},
+ {"model": "declarations.feetype", "pk": 3, "fields": {"code": "Y121", "description": "Richiesta marcatura singoli esemplari (art. 5 c.5 L. 150/92)", "amount": "7.75"}},
+ {"model": "declarations.feetype", "pk": 4, "fields": {"code": "P048", "description": "Autorizzazione detenzione esemplari vivi (art. 6 c.3 D.Lgs. 135/2022)", "amount": "77.47"}},
+ {"model": "declarations.feetype", "pk": 5, "fields": {"code": "Q840", "description": "Licenze di importazione/esportazione e certificato di riesportazione", "amount": "27.00"}}
+]

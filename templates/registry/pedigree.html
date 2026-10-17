@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="h4">Genealogia – {{ specimen }}</h1>
+<div class="row g-4">
+<div class="col-md-7"><div class="card"><div class="card-body pedigree">
+  {% include "registry/_pedigree_node.html" with t=tree %}
+</div></div></div>
+<div class="col-md-5"><div class="card"><div class="card-body">
+  <h2 class="h6">Discendenti diretti</h2>
+  <ul>{% for o in offspring %}<li><a href="{{ o.get_absolute_url }}">{{ o }}</a> {{ o.birth_date|date:"d/m/Y" }}</li>{% empty %}<li class="text-muted">Nessuno</li>{% endfor %}</ul>
+</div></div></div>
+</div>
+{% endblock %}

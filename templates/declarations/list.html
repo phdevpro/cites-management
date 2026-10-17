@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load cites %}
+{% block content %}
+<h1 class="h4 mb-3">Denunce e comunicazioni</h1>
+<form class="row g-2 mb-3">
+  <div class="col-md-4"><select name="kind" class="form-select" onchange="this.form.submit()"><option value="">Tutti i tipi</option>{% for v,l in kinds %}<option value="{{ v }}" {% if request.GET.kind == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+  <div class="col-md-3"><select name="status" class="form-select" onchange="this.form.submit()"><option value="">Tutti gli stati</option>{% for v,l in statuses %}<option value="{{ v }}" {% if request.GET.status == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+  <div class="col-md-2"><select name="year" class="form-select" onchange="this.form.submit()"><option value="">Anno</option>{% for y in years %}<option {% if request.GET.year == y.year|stringformat:"s" %}selected{% endif %}>{{ y.year }}</option>{% endfor %}</select></div>
+</form>
+<div class="card"><div class="table-responsive"><table class="table table-hover mb-0">
+<thead><tr><th>Tipo</th><th>Data evento</th><th>Esemplari</th><th>Scadenza</th><th>Stato</th><th>Protocollo</th></tr></thead>
+{% for d in object_list %}
+<tr><td><a href="{{ d.get_absolute_url }}">{{ d.get_kind_display }}</a>{% if d.imported %} <span class="badge bg-light text-dark">storico</span>{% endif %}</td>
+<td>{{ d.event_date|date:"d/m/Y" }}</td>
+<td><small>{% for i in d.items.all %}{{ i.quantity }}× <em>{{ i.specimen.species }}</em>{% if not forloop.last %}, {% endif %}{% endfor %}</small></td>
+<td>{% if d.deadline %}<span class="{% if d.is_overdue %}text-danger fw-bold{% endif %}">{{ d.deadline|date:"d/m/Y" }}</span>{% endif %}</td>
+<td><span class="badge bg-{{ d.status|status_color }}">{{ d.get_status_display }}</span></td>
+<td><small>{{ d.protocol_number }}</small></td></tr>
+{% empty %}<tr><td colspan="6" class="text-muted">Nessuna pratica.</td></tr>{% endfor %}
+</table></div></div>
+{% include "_pagination.html" %}
+{% endblock %}

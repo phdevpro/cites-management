@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3"><h1 class="h4">Controparti (cedenti / cessionari)</h1><a class="btn btn-success" href="{% url 'registry:counterparty_create' %}">+ Nuova</a></div>
+<div class="card"><table class="table mb-0">
+<thead><tr><th>Nome</th><th>Indirizzo</th><th>Contatti</th><th>Documento</th><th>Acquisiti / ceduti</th></tr></thead>
+{% for c in object_list %}<tr><td><a href="{% url 'registry:counterparty_edit' c.pk %}">{{ c }}</a></td><td>{{ c.full_address }}</td><td>{{ c.phone }} {{ c.email }}</td><td>{{ c.id_doc_number }} {% if c.id_doc_file %}<i class="bi bi-paperclip"></i>{% endif %}</td><td>{{ c.n_in }} / {{ c.n_out }}</td></tr>
+{% empty %}<tr><td colspan="5" class="text-muted">Nessuna controparte.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

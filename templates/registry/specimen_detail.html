@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load cites %}
+{% block content %}
+{% with sp=object %}
+<div class="d-flex flex-wrap justify-content-between align-items-start mb-3 gap-2">
+  <div>
+    <h1 class="h4 mb-1"><em>{{ sp.species.scientific_name }}</em> {{ sp.name }} {% if sp.is_lot %}<span class="badge bg-light text-dark">lotto di {{ sp.quantity }}</span>{% endif %}</h1>
+    <span class="badge bg-{{ sp.status|status_color }}">{{ sp.get_status_display }}{% if sp.status_date %} il {{ sp.status_date|date:"d/m/Y" }}{% endif %}</span>
+    <span class="badge bg-{{ sp.species.eu_annex|annex_color }}">All. {{ sp.species.eu_annex }}</span>
+    {% if sp.needs_microchip %}<span class="badge bg-warning text-dark">microchip da applicare</span>{% endif %}
+  </div>
+  {% if sp.is_alive and current_membership.can_edit %}
+  <div class="btn-group flex-wrap">
+    <a class="btn btn-outline-secondary" href="{% url 'registry:specimen_edit' sp.pk %}">Modifica</a>
+    <a class="btn btn-outline-secondary" href="{% url 'registry:specimen_marking' sp.pk %}">Marcatura</a>
+    {% if sp.is_lot %}<a class="btn btn-outline-secondary" href="{% url 'registry:specimen_split' sp.pk %}">Separa</a>{% endif %}
+    <a class="btn btn-outline-primary" href="{% url 'declarations:new_transfer' %}?specimen={{ sp.pk }}">Cedi</a>
+    <a class="btn btn-outline-dark" href="{% url 'declarations:new_death' %}?specimen={{ sp.pk }}">Decesso</a>
+    <a class="btn btn-outline-warning" href="{% url 'declarations:new_loss' %}?specimen={{ sp.pk }}">Smarrimento</a>
+  </div>
+  {% endif %}
+</div>
+<div class="row g-4">
+<div class="col-lg-5">
+  <div class="card mb-4"><div class="card-body">
+    <dl class="row mb-0">
+      <dt class="col-5">Nome comune</dt><dd class="col-7">{{ sp.species.common_name }}</dd>
+      <dt class="col-5">Sesso</dt><dd class="col-7">{{ sp.get_sex_display }}</dd>
+      <dt class="col-5">Nascita</dt><dd class="col-7">{{ sp.birth_date|date:"d/m/Y"|default:"—" }}{% if sp.birth_date_approx %} (approx.){% endif %}</dd>
+      <dt class="col-5">Provenienza</dt><dd class="col-7">{{ sp.get_origin_display }} ({{ sp.source_code }})</dd>
+      {% if sp.acquired_from %}<dt class="col-5">Acquisito da</dt><dd class="col-7">{{ sp.acquired_from }} il {{ sp.acquired_on|date:"d/m/Y" }}</dd>{% endif %}
+      {% if sp.transferred_to %}<dt class="col-5">Ceduto a</dt><dd class="col-7">{{ sp.transferred_to }}</dd>{% endif %}
+      <dt class="col-5">Padre</dt><dd class="col-7">{% if sp.father %}<a href="{{ sp.father.get_absolute_url }}">{{ sp.father }}</a>{% else %}—{% endif %}</dd>
+      <dt class="col-5">Madre</dt><dd class="col-7">{% if sp.mother %}<a href="{{ sp.mother.get_absolute_url }}">{{ sp.mother }}</a>{% else %}—{% endif %}</dd>
+      {% if sp.breeding_group %}<dt class="col-5">Gruppo riprod.</dt><dd class="col-7">{{ sp.breeding_group }}</dd>{% endif %}
+      {% if sp.split_from %}<dt class="col-5">Dal lotto</dt><dd class="col-7"><a href="{{ sp.split_from.get_absolute_url }}">{{ sp.split_from }}</a></dd>{% endif %}
+      {% if sp.cause_of_death %}<dt class="col-5">Causa decesso</dt><dd class="col-7">{{ sp.cause_of_death }}</dd>{% endif %}
+      {% if sp.notes %}<dt class="col-5">Note</dt><dd class="col-7">{{ sp.notes|linebreaksbr }}</dd>{% endif %}
+    </dl>
+    <a class="small" href="{% url 'registry:pedigree' sp.pk %}"><i class="bi bi-diagram-3"></i> Genealogia</a>
+    {% if sp.photo %}<img src="{{ sp.photo.url }}" class="img-fluid rounded mt-2">{% endif %}
+  </div></div>
+  <div class="card mb-4"><div class="card-body">
+    <h2 class="h6">Marcature</h2>
+    <ul class="list-unstyled mb-0">{% for m in sp.markings.all %}<li>{{ m.get_kind_display }} <strong>{{ m.code }}</strong> {% if m.manufacturer %}({{ m.manufacturer }}){% endif %} {% if m.applied_on %}– {{ m.applied_on|date:"d/m/Y" }}{% endif %}</li>{% empty %}<li class="text-muted">Nessuna</li>{% endfor %}</ul>
+  </div></div>
+  {% if splits or offspring %}
+  <div class="card"><div class="card-body">
+    {% if splits %}<h2 class="h6">Separati da questo lotto</h2><ul>{% for s in splits %}<li><a href="{{ s.get_absolute_url }}">{{ s }}</a> – {{ s.get_status_display }}</li>{% endfor %}</ul>{% endif %}
+    {% if offspring %}<h2 class="h6">Figli</h2><ul>{% for s in offspring %}<li><a href="{{ s.get_absolute_url }}">{{ s }}</a></li>{% endfor %}</ul>{% endif %}
+  </div></div>
+  {% endif %}
+</div>
+<div class="col-lg-7">
+  <div class="card mb-4"><div class="card-body">
+    <h2 class="h6">Documenti CITES <a class="btn btn-sm btn-outline-success float-end" href="{% url 'registry:document_create' %}?specimen={{ sp.pk }}">+</a></h2>
+    <table class="table table-sm mb-0">{% for d in documents %}<tr><td>{{ d.get_doc_type_display }}</td><td><a href="{% url 'registry:document_edit' d.pk %}">{{ d.number }}</a></td><td>{{ d.issued_on|date:"d/m/Y" }}</td><td>{% if d.file %}<a href="{{ d.file.url }}" target="_blank"><i class="bi bi-file-earmark-pdf"></i></a>{% endif %}{% if d.returned_on %} <span class="badge bg-secondary">restituito</span>{% endif %}</td></tr>{% empty %}<tr><td class="text-muted">Nessuno</td></tr>{% endfor %}</table>
+  </div></div>
+  <div class="card mb-4"><div class="card-body">
+    <h2 class="h6">Pratiche</h2>
+    <table class="table table-sm mb-0">{% for i in declarations %}<tr><td><a href="{{ i.declaration.get_absolute_url }}">{{ i.declaration.get_kind_display }}</a></td><td>{{ i.declaration.event_date|date:"d/m/Y" }}</td><td>{{ i.quantity }}</td><td><span class="badge bg-{{ i.declaration.status|status_color }}">{{ i.declaration.get_status_display }}</span></td></tr>{% empty %}<tr><td class="text-muted">Nessuna</td></tr>{% endfor %}</table>
+  </div></div>
+  <div class="card mb-4"><div class="card-body">
+    <h2 class="h6">Registro carico/scarico</h2>
+    <table class="table table-sm mb-0">{% for e in register %}<tr><td>{{ e.register_type }} {{ e.number }}</td><td><span class="badge bg-{{ e.direction|status_color }}">{{ e.get_direction_display }}</span></td><td>{{ e.get_cause_display }}</td><td>{{ e.event_date|date:"d/m/Y" }}</td><td>{{ e.quantity }}</td></tr>{% empty %}<tr><td class="text-muted">Nessuna registrazione</td></tr>{% endfor %}</table>
+  </div></div>
+  <div class="card"><div class="card-body">
+    <h2 class="h6">Storico modifiche</h2>
+    <ul class="small mb-0">{% for h in history %}<li>{{ h.history_date|date:"d/m/Y H:i" }} – {{ h.get_history_type_display }}{% if h.history_user %} da {{ h.history_user }}{% endif %}: stato {{ h.get_status_display }}, n. {{ h.quantity }}</li>{% endfor %}</ul>
+  </div></div>
+</div>
+</div>
+{% endwith %}
+{% endblock %}

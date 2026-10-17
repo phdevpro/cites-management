@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load cites %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+  <div>
+    <h1 class="h4 mb-1">{{ decl.get_kind_display }}</h1>
+    <span class="badge bg-{{ decl.status|status_color }}">{{ decl.get_status_display }}</span>
+    {% if decl.deadline and decl.status in "draft generated" %}
+      <span class="badge {% if decl.is_overdue %}bg-danger{% elif decl.days_left <= 3 %}bg-warning text-dark{% else %}bg-light text-dark{% endif %}">scadenza {{ decl.deadline|date:"d/m/Y" }}{% if not decl.is_overdue %} ({{ decl.days_left }} gg){% endif %}</span>
+    {% endif %}
+    {% if decl.imported %}<span class="badge bg-light text-dark">importata da archivio</span>{% endif %}
+  </div>
+  <div class="btn-group flex-wrap">
+    {% if spec %}
+    <a class="btn btn-outline-secondary" href="{% url 'declarations:edit_form' decl.pk %}"><i class="bi bi-pencil-square"></i> Dati modulo</a>
+    <a class="btn btn-outline-secondary" href="{% url 'declarations:preview' decl.pk %}" target="_blank"><i class="bi bi-eye"></i> Anteprima</a>
+    {% if current_membership.can_edit %}<form method="post" action="{% url 'declarations:generate' decl.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-success rounded-0"><i class="bi bi-file-earmark-pdf"></i> Genera PDF</button></form>{% endif %}
+    {% endif %}
+    {% if decl.pdf %}<a class="btn btn-outline-success" href="{% url 'declarations:download' decl.pk %}" target="_blank">Scarica PDF</a>{% endif %}
+    <a class="btn btn-outline-secondary" href="{% url 'declarations:envelope' decl.pk %}" target="_blank" title="Busta"><i class="bi bi-envelope"></i></a>
+    <a class="btn btn-outline-secondary" href="{% url 'declarations:bundle' decl.pk %}" title="Pacchetto ZIP"><i class="bi bi-file-zip"></i></a>
+  </div>
+</div>
+<div class="row g-4">
+<div class="col-lg-7">
+  <div class="card mb-4"><div class="card-body">
+    <dl class="row mb-0">
+      <dt class="col-4">Data evento</dt><dd class="col-8">{{ decl.event_date|date:"d/m/Y" }}</dd>
+      <dt class="col-4">Ufficio</dt><dd class="col-8">{{ decl.office|default:"— (imposta nel profilo detentore)" }}</dd>
+      {% if decl.counterparty %}<dt class="col-4">Controparte</dt><dd class="col-8">{{ decl.counterparty }} – {{ decl.counterparty.full_address }}</dd>{% endif %}
+      {% if decl.sent_on %}<dt class="col-4">Inviata</dt><dd class="col-8">{{ decl.sent_on|date:"d/m/Y" }} ({{ decl.get_channel_display }})</dd>{% endif %}
+      {% if decl.protocol_number %}<dt class="col-4">Protocollo</dt><dd class="col-8">{{ decl.protocol_number }} {{ decl.protocol_date|date:"d/m/Y" }}</dd>{% endif %}
+      {% if decl.notes %}<dt class="col-4">Note</dt><dd class="col-8">{{ decl.notes|linebreaksbr }}</dd>{% endif %}
+    </dl>
+  </div></div>
+  <div class="card mb-4"><div class="card-body">
+    <h2 class="h6">Esemplari</h2>
+    <table class="table table-sm mb-0"><thead><tr><th>Esemplare</th><th>N.</th><th>Marcatura</th><th>Documento</th><th>Stato</th></tr></thead>
+    {% for i in items %}<tr><td><a href="{{ i.specimen.get_absolute_url }}">{{ i.specimen }}</a></td><td>{{ i.quantity }}</td><td><small>{{ i.specimen.markings_label }}</small></td><td><small>{{ i.document.form_label|default:"" }}</small></td><td><span class="badge bg-{{ i.specimen.status|status_color }}">{{ i.specimen.get_status_display }}</span></td></tr>
+    {% empty %}<tr><td class="text-muted">Nessun esemplare collegato.</td></tr>{% endfor %}</table>
+  </div></div>
+  <div class="card mb-4"><div class="card-body">
+    <h2 class="h6">Allegati</h2>
+    <ul class="list-unstyled">{% for a in attachments %}<li><i class="bi bi-paperclip"></i> <a href="{{ a.file.url }}" target="_blank">{{ a.description|default:a.file.name }}</a> <span class="badge bg-light text-dark">{{ a.get_kind_display }}</span></li>{% empty %}<li class="text-muted">Nessuno</li>{% endfor %}</ul>
+    {% if current_membership.can_edit %}
+    <form method="post" enctype="multipart/form-data" action="{% url 'declarations:add_attachment' decl.pk %}" class="row g-2">{% csrf_token %}
+      <div class="col-md-3">{{ attachment_form.kind }}</div><div class="col-md-4">{{ attachment_form.file }}</div><div class="col-md-3">{{ attachment_form.description }}</div><div class="col-md-2"><button class="btn btn-outline-secondary w-100">Carica</button></div>
+    </form>{% endif %}
+  </div></div>
+  <div class="card"><div class="card-body">
+    <h2 class="h6">Pagamenti <a class="btn btn-sm btn-outline-success float-end" href="{% url 'declarations:payment_create' %}?declaration={{ decl.pk }}">+</a></h2>
+    <ul class="list-unstyled mb-0">{% for p in payments %}<li>{{ p.paid_on|date:"d/m/Y" }} € {{ p.amount }} {{ p.fee_type.code }} {{ p.reference }} {% if p.receipt %}<a href="{{ p.receipt.url }}" target="_blank"><i class="bi bi-receipt"></i></a>{% endif %}</li>{% empty %}<li class="text-muted">Nessuno{% if decl.kind == "SCT3" %} – serve il diritto W802 (€ 15,49){% endif %}</li>{% endfor %}</ul>
+  </div></div>
+</div>
+<div class="col-lg-5">
+  {% if current_membership.can_edit %}
+  <div class="card mb-4"><div class="card-body">
+    <h2 class="h6">1. Invio</h2>
+    <form method="post" action="{% url 'declarations:mark_sent' decl.pk %}" class="row g-2">{% csrf_token %}
+      <div class="col-6">{{ sent_form.sent_on }}</div><div class="col-6">{{ sent_form.channel }}</div>
+      <div class="col-12"><button class="btn btn-primary w-100">Segna come inviata</button></div>
+    </form>
+  </div></div>
+  <div class="card mb-4"><div class="card-body">
+    <h2 class="h6">2. Risposta / protocollo dell'ufficio</h2>
+    <form method="post" enctype="multipart/form-data" action="{% url 'declarations:mark_protocolled' decl.pk %}">{% csrf_token %}
+      {% include "_form.html" with form=protocol_form %}
+      <button class="btn btn-success w-100">Registra protocollo</button>
+    </form>
+  </div></div>
+  {% if decl.kind == "SCT3" and decl.status != "closed" %}
+  <div class="card mb-4 border-primary"><div class="card-body">
+    <h2 class="h6">3. Certificato rilasciato → consegna esemplari</h2>
+    <form method="post" enctype="multipart/form-data" action="{% url 'declarations:complete_transfer' decl.pk %}">{% csrf_token %}
+      {% include "_form.html" with form=complete_form %}
+      <button class="btn btn-primary w-100">Completa cessione (scarico)</button>
+    </form>
+  </div></div>
+  {% endif %}
+  {% if decl.status == "draft" %}
+  <form method="post" action="{% url 'declarations:delete' decl.pk %}" onsubmit="return confirm('Eliminare la bozza?')">{% csrf_token %}<button class="btn btn-link text-danger p-0">Elimina bozza</button></form>
+  {% endif %}
+  {% endif %}
+  {% if imported_files %}<div class="card mt-3"><div class="card-body"><h2 class="h6">Origine import</h2>{% for f in imported_files %}<a href="{% url 'importer:review' f.pk %}">{{ f.original_path }}</a><br>{% endfor %}</div></div>{% endif %}
+</div>
+</div>
+{% endblock %}
+{% block scripts %}{% include "_bootstrapify.html" %}{% endblock %}

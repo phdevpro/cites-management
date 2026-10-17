@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3"><h1 class="h4">Documenti CITES</h1><a class="btn btn-success" href="{% url 'registry:document_create' %}">+ Nuovo</a></div>
+<form class="mb-3"><select name="type" class="form-select w-auto" onchange="this.form.submit()"><option value="">Tutti i tipi</option>{% for v,l in types %}<option value="{{ v }}" {% if request.GET.type == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></form>
+<div class="card"><table class="table mb-0">
+<thead><tr><th>Tipo</th><th>Numero</th><th>Data</th><th>Ufficio</th><th>Esemplari</th><th></th></tr></thead>
+{% for d in object_list %}<tr><td>{{ d.get_doc_type_display }}</td><td><a href="{% url 'registry:document_edit' d.pk %}">{{ d.number }}</a></td><td>{{ d.issued_on|date:"d/m/Y" }}</td><td>{{ d.issuer }}</td>
+<td><small>{% for s in d.specimens.all %}<a href="{{ s.get_absolute_url }}">{{ s }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</small></td>
+<td>{% if d.file %}<a href="{{ d.file.url }}" target="_blank"><i class="bi bi-file-earmark"></i></a>{% endif %} {% if d.returned_on %}<span class="badge bg-secondary">restituito</span>{% endif %}</td></tr>
+{% empty %}<tr><td colspan="6" class="text-muted">Nessun documento.</td></tr>{% endfor %}
+</table></div>
+{% include "_pagination.html" %}
+{% endblock %}

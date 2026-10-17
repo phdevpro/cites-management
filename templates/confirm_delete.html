@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card"><div class="card-body">
+<form method="post">{% csrf_token %}
+  <p>Eliminare <strong>{{ object }}</strong>?</p>
+  <button class="btn btn-danger">Elimina</button> <a href="javascript:history.back()" class="btn btn-link">Annulla</a>
+</form></div></div>
+{% endblock %}
