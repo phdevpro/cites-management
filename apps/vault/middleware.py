@@ -9,8 +9,10 @@ from . import services
 from .context import KeyRing, activate, deactivate
 from .models import UserKey
 
-EXEMPT_PREFIXES = ("/login/", "/logout/", "/account/signup/", "/account/termini/", "/termini/", "/privacy/", "/vault/",
-                   "/static/", "/favicon.ico", "/.well-known/")
+EXEMPT_PREFIXES = ("/login/", "/logout/", "/account/signup/", "/account/termini/", "/account/2fa/", "/termini/",
+                   "/privacy/", "/vault/", "/static/", "/favicon.ico", "/.well-known/")
+
+GATE_PAGES = ("/account/2fa/", "/account/termini/", "/vault/")
 
 
 def _max_age():
@@ -66,7 +68,10 @@ class VaultGateMiddleware:
         if not uk.recovery_confirmed:
             return reverse("vault:recovery")
         if not request.vault.private_key:
-            return f"{reverse('vault:unlock')}?{urlencode({'next': request.get_full_path()})}"
+            nxt = request.get_full_path()
+            if len(nxt) >= 1000 or nxt.startswith(GATE_PAGES):
+                return reverse("vault:unlock")
+            return f"{reverse('vault:unlock')}?{urlencode({'next': nxt})}"
         keeper = getattr(request, "keeper", None)
         if keeper is not None:
             if not keeper.key_id:

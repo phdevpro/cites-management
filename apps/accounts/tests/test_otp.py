@@ -78,3 +78,33 @@ def test_totp_secrets_not_in_admin(client, admin_user, settings):
     from django_otp.plugins.otp_totp.models import TOTPDevice as T
 
     assert not admin.site.is_registered(T)
+
+
+@pytest.mark.django_db
+def test_new_admin_goes_through_2fa_terms_and_encryption_without_loops(client, settings):
+    """Regression: the 2FA and terms gates redirected to each other, nesting `next` until the URL was too long."""
+    from django.contrib.auth.models import User
+
+    admin = User.objects.create_user("fresh-admin", "f@example.com", "pw-test-123", is_staff=True, is_superuser=True)
+    client.force_login(admin)
+
+    def land(url):
+        resp = client.get(url, follow=True)
+        assert len(resp.redirect_chain) <= 2, resp.redirect_chain
+        assert resp.status_code == 200
+        assert all(len(u) < 300 for u, _ in resp.redirect_chain)
+        return resp.request["PATH_INFO"]
+
+    # 1. two-factor setup first, reachable from anywhere (terms and encryption must not bounce it)
+    assert land("/esemplari/") == "/account/2fa/configura/"
+    assert land(f"/{settings.ADMIN_URL}") == "/account/2fa/configura/"
+    assert land("/account/termini/accetta/") == "/account/2fa/configura/"
+    device = TOTPDevice.objects.get(user=admin)
+    client.post("/account/2fa/configura/", {"token": code_for(device)})
+
+    # 2. then the terms
+    assert land("/esemplari/") == "/account/termini/accetta/"
+    client.post("/account/termini/accetta/", {"accept_terms": "on", "accept_risk": "on"})
+
+    # 3. then the encryption setup
+    assert land("/esemplari/") == "/vault/configura/"

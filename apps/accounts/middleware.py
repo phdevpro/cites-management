@@ -7,6 +7,8 @@ from .models import Membership
 
 SESSION_KEY = "current_keeper_id"
 
+GATE_PAGES = ("/account/2fa/", "/account/termini/", "/vault/")
+
 
 class CurrentKeeperMiddleware:
     """Attach request.keeper / request.membership for the active keeper (tenant)."""
@@ -32,8 +34,10 @@ class CurrentKeeperMiddleware:
         return self.get_response(request)
 
 
-TERMS_EXEMPT = ("/login/", "/logout/", "/termini/", "/privacy/", "/account/termini/", "/static/", "/favicon.ico",
-                "/.well-known/")
+# Gates run in this order: 2FA (accounts.otp) -> terms -> encryption (vault). A later gate must let the
+# pages of the earlier gates through, otherwise two gates redirect to each other forever.
+TERMS_EXEMPT = ("/login/", "/logout/", "/termini/", "/privacy/", "/account/termini/", "/account/2fa/", "/static/",
+                "/favicon.ico", "/.well-known/")
 
 
 class TermsAcceptanceMiddleware:
@@ -46,7 +50,8 @@ class TermsAcceptanceMiddleware:
         user = request.user
         if user.is_authenticated and not request.path.startswith(TERMS_EXEMPT) and terms.needs_acceptance(user):
             url = reverse("accounts:accept_terms")
-            if request.method == "GET":
-                url += "?" + urlencode({"next": request.get_full_path()})
+            nxt = request.get_full_path()
+            if request.method == "GET" and len(nxt) < 1000 and not nxt.startswith(GATE_PAGES):
+                url += "?" + urlencode({"next": nxt})
             return redirect(url)
         return self.get_response(request)

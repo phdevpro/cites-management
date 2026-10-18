@@ -23,6 +23,8 @@ EXEMPT_PREFIXES = ("/login/", "/logout/", "/account/2fa/", "/static/", "/favicon
                    "/termini/", "/privacy/")
 BACKUP_CODES = 10
 
+GATE_PAGES = ("/account/2fa/", "/account/termini/", "/vault/")
+
 
 def otp_required(user) -> bool:
     mode = getattr(settings, "OTP_REQUIRED_FOR", "staff")
@@ -46,8 +48,9 @@ class OTPGateMiddleware:
         if otp_required(user) and not request.path.startswith(EXEMPT_PREFIXES) and not user.is_verified():
             target = "accounts:otp_verify" if confirmed_totp(user) else "accounts:otp_setup"
             url = reverse(target)
-            if request.method == "GET":
-                url += "?" + urlencode({"next": request.get_full_path()})
+            nxt = request.get_full_path()
+            if request.method == "GET" and len(nxt) < 1000 and not nxt.startswith(GATE_PAGES):
+                url += "?" + urlencode({"next": nxt})
             return redirect(url)
         return self.get_response(request)
 
