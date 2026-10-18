@@ -35,9 +35,15 @@ def test_birth_wizard_and_generate(client_logged, keeper, hermanni):
     sp = Specimen.objects.get()
     assert sp.quantity == 7
     decl = sp.declaration_items.get().declaration
+    # no signature / ID in the profile: generating asks first
     resp = client_logged.post(f"/denunce/{decl.pk}/genera/")
+    assert resp.url == f"/denunce/{decl.pk}/firma-e-allegati/"
+    resp = client_logged.post(f"/denunce/{decl.pk}/firma-e-allegati/", {})  # both unticked = without
+    assert resp.status_code == 302, resp.content.decode()[:3000]
     decl.refresh_from_db()
     assert decl.status == "generated" and decl.pdf.name.endswith(".pdf")
+    assert decl.data["output"] == {"signature": False, "id_doc": False}
+    assert client_logged.post(f"/denunce/{decl.pk}/genera/").status_code == 302  # choice remembered: no question
 
 
 @pytest.mark.django_db

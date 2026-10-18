@@ -261,10 +261,15 @@ def _yn(value):
     return "SI [X]   NO [ ]" if value else "SI [ ]   NO [X]"
 
 
-def _signature_block(place_date, who="Firma"):
-    t = Table([[P(f"Luogo e data: {place_date}"), P(f"{who}<br/><br/>_______________________________", S_BASE)]],
-              colWidths=[90 * mm, 90 * mm])
-    return t
+def _signature_block(place_date, who="Firma", signature: bytes | None = None):
+    if signature:
+        from reportlab.platypus import Image as RLImage
+
+        sign = [P(who), RLImage(io.BytesIO(signature), width=60 * mm, height=18 * mm, kind="proportional"),
+                P("_______________________________")]
+    else:
+        sign = P(f"{who}<br/><br/>_______________________________", S_BASE)
+    return Table([[P(f"Luogo e data: {place_date}"), sign]], colWidths=[90 * mm, 90 * mm])
 
 
 def _doc(build) -> bytes:
@@ -275,7 +280,7 @@ def _doc(build) -> bytes:
     return buf.getvalue()
 
 
-def _render_sct3(data: dict) -> list[bytes]:
+def _render_sct3(data: dict, signature: bytes | None = None) -> list[bytes]:
     f = data["fields"]
     spec = FORM_SPECS["SCT3"]
 
@@ -322,7 +327,7 @@ def _render_sct3(data: dict) -> list[bytes]:
               "inamovibile (uccelli), foto (allegare), altro; 4) TIPO DOCUMENTO: tipologia ed estremi della "
               "documentazione CITES che accompagna l’esemplare, allegandone copia.", S_SMALL),
             Spacer(1, 4 * mm),
-            _signature_block(f.get("place_date"), "Firma (soggetto di provenienza)"),
+            _signature_block(f.get("place_date"), "Firma (soggetto di provenienza)", signature),
             PageBreak(),
             P("MODELLO SCT3", S_RIGHT),
             P("SCHEDA INFORMATIVA ANIMALI DI ALLEGATO “A” PER LA RICHIESTA DI CERTIFICATO "
@@ -355,7 +360,7 @@ def _render_sct3(data: dict) -> list[bytes]:
     return [_doc(build)]
 
 
-def _render_sale_b(data: dict) -> list[bytes]:
+def _render_sale_b(data: dict, signature: bytes | None = None) -> list[bytes]:
     f = data["fields"]
     spec = FORM_SPECS["CESSB"]
 
@@ -373,7 +378,7 @@ def _render_sale_b(data: dict) -> list[bytes]:
             _rows_table(spec.row_columns, data.get("rows", []),
                         [38 * mm, 32 * mm, 10 * mm, 10 * mm, 13 * mm, 37 * mm, 40 * mm], min_rows=4),
             Spacer(1, 6 * mm),
-            _signature_block(f.get("place_date"), "Firma del cedente"),
+            _signature_block(f.get("place_date"), "Firma del cedente", signature),
             Spacer(1, 6 * mm),
             _signature_block("", "Firma del cessionario per ricevuta"),
             Spacer(1, 6 * mm),
@@ -383,7 +388,7 @@ def _render_sale_b(data: dict) -> list[bytes]:
     return [_doc(build)]
 
 
-def _render_letter(data: dict, spec_key: str) -> list[bytes]:
+def _render_letter(data: dict, spec_key: str, signature: bytes | None = None) -> list[bytes]:
     f = data["fields"]
     spec = FORM_SPECS[spec_key]
 
@@ -402,7 +407,7 @@ def _render_letter(data: dict, spec_key: str) -> list[bytes]:
         if data.get("rows"):
             story.append(_rows_table(spec.row_columns, data["rows"], [60 * mm, 15 * mm, 50 * mm, 55 * mm]))
         story += [Spacer(1, 4 * mm), P("Si allega copia del documento di identità."), Spacer(1, 8 * mm),
-                  KeepTogether([_signature_block(f.get("place_date"))]), Spacer(1, 8 * mm), P(SIGNATURE_NOTE, S_SMALL)]
+                  KeepTogether([_signature_block(f.get("place_date"), "Firma", signature)]), Spacer(1, 8 * mm), P(SIGNATURE_NOTE, S_SMALL)]
         return story
 
     return [_doc(build)]
@@ -410,25 +415,48 @@ def _render_letter(data: dict, spec_key: str) -> list[bytes]:
 
 # --------------------------------------------------------------------------- entry point
 
-def render_pdf(kind: str, data: dict, flatten: bool | None = None) -> bytes:
-    """Render a form. AcroForms stay editable when a single page, flattened when split on more copies."""
+def render_pdf(kind: str, data: dict, flatten: bool | None = None, signature: bytes | None = None,
+               attachment: bytes | None = None, attachment_name: str = "") -> bytes:
+    """Render a form. AcroForms stay editable when a single page, flattened when split on more copies.
+    `signature` (PNG) is placed in the declarant's signature space; `attachment` (the identity
+    document, PDF or image) is appended after the form."""
+    from .signing import SIGNATURE_BOXES, append_document, stamp_signature
+
     if kind in MAPPINGS:
         n_pages = len(_chunks(data.get("rows"), FORM_SPECS[kind].rows_per_page))
         parts = _fill_acroform(kind, data, flatten=flatten if flatten is not None else n_pages > 1)
     elif kind == "SCT1B":
         parts = _render_sct1b(data)
     elif kind == "SCT3":
-        parts = _render_sct3(data)
+        parts = _render_sct3(data, signature)
     elif kind == "CESSB":
-        parts = _render_sale_b(data)
+        parts = _render_sale_b(data, signature)
     elif kind in ("LOSS", "SITE", "MARK"):
-        parts = _render_letter(data, kind)
+        parts = _render_letter(data, kind, signature)
     else:
         raise ValueError(f"Tipo modulo sconosciuto: {kind}")
-    return _merge(parts)
+    pdf = _merge(parts)
+    if signature and kind in SIGNATURE_BOXES:
+        pdf = stamp_signature(pdf, kind, signature)
+    if attachment:
+        pdf = append_document(pdf, attachment, attachment_name)
+    return pdf
+
+
+def output_options(declaration) -> dict:
+    """What goes into the generated PDF: declarant's signature and identity document (default: yes)."""
+    opts = (declaration.data or {}).get("output") or {}
+    return {"signature": opts.get("signature", True), "id_doc": opts.get("id_doc", True)}
 
 
 def render_declaration(declaration) -> bytes:
+    from apps.vault.storage import read_plain
+
     from .formdata import get_form_data
 
-    return render_pdf(declaration.kind, get_form_data(declaration))
+    keeper = declaration.keeper
+    opts = output_options(declaration)
+    signature = read_plain(keeper.signature) if opts["signature"] and keeper.signature else None
+    attachment = read_plain(keeper.id_doc_file) if opts["id_doc"] and keeper.id_doc_file else None
+    return render_pdf(declaration.kind, get_form_data(declaration), signature=signature, attachment=attachment,
+                      attachment_name=keeper.id_doc_file.name if attachment else "")

@@ -17,6 +17,7 @@
     {% if current_membership.can_edit %}<form method="post" action="{% url 'declarations:generate' decl.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-success rounded-0"><i class="bi bi-file-earmark-pdf"></i> Genera PDF</button></form>{% endif %}
     {% endif %}
     {% if decl.pdf %}<a class="btn btn-outline-success" href="{% url 'declarations:download' decl.pk %}" target="_blank">Scarica PDF</a>{% endif %}
+    {% if spec and current_membership.can_edit %}<a class="btn btn-outline-secondary" href="{% url 'declarations:pdf_options' decl.pk %}" title="Firma e documento d'identità"><i class="bi bi-pen"></i></a>{% endif %}
     <a class="btn btn-outline-secondary" href="{% url 'declarations:envelope' decl.pk %}" target="_blank" title="Busta"><i class="bi bi-envelope"></i></a>
     <a class="btn btn-outline-secondary" href="{% url 'declarations:bundle' decl.pk %}" title="Pacchetto ZIP"><i class="bi bi-file-zip"></i></a>
   </div>

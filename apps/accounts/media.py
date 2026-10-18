@@ -13,6 +13,7 @@ from apps.vault.context import VaultLocked
 # (app_label.Model, file field, lookup path to Keeper)
 PROTECTED = [
     ("accounts.Keeper", "id_doc_file", ""),
+    ("accounts.Keeper", "signature", ""),
     ("registry.Counterparty", "id_doc_file", "keeper"),
     ("registry.Specimen", "photo", "keeper"),
     ("registry.Marking", "photo", "specimen__keeper"),

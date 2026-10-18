@@ -153,3 +153,40 @@ class PaymentForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["declaration"].queryset = Declaration.objects.filter(keeper=keeper)
         self.fields["fee_type"].queryset = FeeType.objects.all()
+
+
+class PdfOptionsForm(forms.Form):
+    """Asked before generating when the declarant's signature or identity document is missing."""
+
+    include_signature = forms.BooleanField(required=False, initial=True, label="Apponi la firma del dichiarante")
+    signature = forms.ImageField(required=False, label="Carica la firma",
+                                 help_text="PNG o JPG della firma su sfondo bianco: lo sfondo viene reso trasparente. "
+                                           "Viene salvata cifrata nel profilo e riusata.")
+    include_id = forms.BooleanField(required=False, initial=True, label="Allega il documento d'identità in coda al PDF")
+    id_doc = forms.FileField(required=False, label="Carica il documento d'identità",
+                             help_text="PDF o immagine (fronte/retro). Salvato cifrato nel profilo e riusato.")
+
+    def __init__(self, *args, keeper=None, can_upload=True, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.keeper = keeper
+        if not can_upload:
+            del self.fields["signature"]
+            del self.fields["id_doc"]
+
+    def clean_signature(self):
+        from apps.accounts.forms import clean_signature_upload
+
+        return clean_signature_upload(self.cleaned_data.get("signature"))
+
+    def clean_id_doc(self):
+        from apps.accounts.forms import clean_id_document_upload
+
+        return clean_id_document_upload(self.cleaned_data.get("id_doc"))
+
+    def clean(self):
+        cd = super().clean()
+        if cd.get("include_signature") and not (cd.get("signature") or self.keeper.signature):
+            self.add_error("signature", "Carica la firma oppure togli la spunta per generare senza.")
+        if cd.get("include_id") and not (cd.get("id_doc") or self.keeper.id_doc_file):
+            self.add_error("id_doc", "Carica il documento oppure togli la spunta per generare senza.")
+        return cd

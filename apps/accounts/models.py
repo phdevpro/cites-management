@@ -3,7 +3,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apps.vault.fields import EncryptedCharField, EncryptedDateField, EncryptedEmailField
-from apps.vault.storage import EncryptedFileField
+from apps.vault.storage import EncryptedFileField, EncryptedImageField
 
 from .validators import validate_codice_fiscale
 
@@ -54,7 +54,14 @@ class Keeper(models.Model):
     id_doc_type = models.CharField(_("tipo documento"), max_length=4, choices=IdDocType.choices, default=IdDocType.CI)
     id_doc_number = EncryptedCharField(_("numero documento"), max_length=50, blank=True)
     id_doc_expiry = models.DateField(_("scadenza documento"), null=True, blank=True)
-    id_doc_file = EncryptedFileField(_("copia documento"), upload_to="keepers/id/", blank=True)
+    id_doc_file = EncryptedFileField(
+        _("copia documento"), upload_to="keepers/id/", blank=True,
+        help_text=_("PDF o immagine: viene allegato in coda alle denunce generate."),
+    )
+    signature = EncryptedImageField(
+        _("firma"), upload_to="keepers/signature/", blank=True,
+        help_text=_("Immagine della firma (PNG o JPG su sfondo bianco): viene apposta sui moduli generati."),
+    )
     cites_office = models.ForeignKey(
         CitesOffice, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("ufficio CITES di riferimento")
     )

@@ -21,6 +21,38 @@ def terms_field():
     )
 
 
+def clean_signature_upload(value):
+    """New uploads become a transparent, cropped PNG (see pdfforms.signing.prepare_signature)."""
+    from django.core.files.uploadedfile import SimpleUploadedFile, UploadedFile
+
+    if isinstance(value, UploadedFile):
+        from apps.pdfforms.signing import prepare_signature
+
+        value.seek(0)
+        try:
+            data = prepare_signature(value.read())
+        except Exception:
+            raise forms.ValidationError("Immagine della firma non leggibile.") from None
+        return SimpleUploadedFile("firma.png", data, content_type="image/png")
+    return value
+
+
+def clean_id_document_upload(value):
+    from django.core.files.uploadedfile import UploadedFile
+
+    if isinstance(value, UploadedFile):
+        from apps.pdfforms.signing import readable_document
+
+        if not value.name.lower().endswith((".pdf", ".jpg", ".jpeg", ".png")):
+            raise forms.ValidationError("Formato non supportato: usa PDF, JPG o PNG.")
+        value.seek(0)
+        ok = readable_document(value.read(), value.name)
+        value.seek(0)
+        if not ok:
+            raise forms.ValidationError("File non leggibile o danneggiato.")
+    return value
+
+
 class SignupForm(UserCreationForm):
     email = forms.EmailField(required=True)
     accept_terms = terms_field()
@@ -42,6 +74,12 @@ class KeeperForm(forms.ModelForm):
             "birth_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
             "id_doc_expiry": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
         }
+
+    def clean_signature(self):
+        return clean_signature_upload(self.cleaned_data.get("signature"))
+
+    def clean_id_doc_file(self):
+        return clean_id_document_upload(self.cleaned_data.get("id_doc_file"))
 
     def clean_fiscal_code(self):
         return (self.cleaned_data.get("fiscal_code") or "").upper().strip()

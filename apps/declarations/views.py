@@ -16,12 +16,12 @@ from django.views.generic import ListView
 from apps.accounts.mixins import KeeperRequiredMixin
 from apps.pdfforms.envelope import envelope_pdf
 from apps.pdfforms.formdata import FORM_SPECS, build_form_data, get_form_data
-from apps.pdfforms.render import render_pdf
+from apps.pdfforms.render import output_options, render_declaration, render_pdf
 from apps.vault.storage import read_plain
 
 from . import services
 from .forms import (AttachmentForm, BirthForm, CompleteTransferForm, DeathForm, DeclarationMetaForm, LossForm,
-                    NewbornFormSet, PaymentForm, ProtocolForm, SentForm, TransferForm)
+                    NewbornFormSet, PaymentForm, PdfOptionsForm, ProtocolForm, SentForm, TransferForm)
 from .models import Declaration, Payment
 
 
@@ -221,26 +221,75 @@ def _filename(decl):
     return f"{decl.kind}_{decl.event_date:%Y%m%d}_{who}.pdf"
 
 
+def _missing_attachments(decl) -> bool:
+    opts = output_options(decl)
+    keeper = decl.keeper
+    return (opts["signature"] and not keeper.signature) or (opts["id_doc"] and not keeper.id_doc_file)
+
+
+def pdf_options(request, pk):
+    """Signature / identity document for the generated PDF; asked automatically when one is missing."""
+    _guard(request)
+    decl = _get(request, pk)
+    keeper = decl.keeper
+    can_upload = request.membership.role == "owner"
+    opts = output_options(decl)
+    bound = request.method == "POST"
+    form = PdfOptionsForm(request.POST if bound else None, request.FILES if bound else None, keeper=keeper,
+                          can_upload=can_upload,
+                          initial={"include_signature": opts["signature"] and (bool(keeper.signature) or can_upload),
+                                   "include_id": opts["id_doc"] and (bool(keeper.id_doc_file) or can_upload)})
+    if request.method == "POST" and form.is_valid():
+        cd = form.cleaned_data
+        changed = []
+        if cd.get("signature"):
+            keeper.signature = cd["signature"]
+            changed.append("signature")
+        if cd.get("id_doc"):
+            keeper.id_doc_file = cd["id_doc"]
+            changed.append("id_doc_file")
+        if changed:
+            keeper.save(update_fields=changed)
+            messages.success(request, "Salvato nel profilo (cifrato).")
+        decl.data["output"] = {"signature": cd["include_signature"], "id_doc": cd["include_id"]}
+        decl.save(update_fields=["data"])
+        return generate(request, pk)
+    expired = keeper.id_doc_expiry and keeper.id_doc_expiry < timezone.localdate()
+    return render(request, "declarations/pdf_options.html", {
+        "decl": decl, "form": form, "keeper": keeper, "can_upload": can_upload, "id_expired": expired,
+    })
+
+
 def generate(request, pk):
     _guard(request)
     decl = _get(request, pk)
+    if _missing_attachments(decl):
+        return redirect("declarations:pdf_options", pk=pk)  # ask before producing an unsigned PDF
     if "form" not in decl.data:
         decl.data["form"] = build_form_data(decl)
-    pdf = render_pdf(decl.kind, decl.data["form"])
+    decl.save(update_fields=["data"])
+    pdf = render_declaration(decl)
     if decl.pdf:
         decl.pdf.delete(save=False)
     decl.pdf.save(_filename(decl), ContentFile(pdf), save=False)
     if decl.status == Declaration.Status.DRAFT:
         decl.status = Declaration.Status.GENERATED
     decl.save()
-    messages.success(request, "PDF generato: stampalo, firmalo e invialo con copia del documento d'identità.")
+    opts = output_options(decl)
+    signed = opts["signature"] and bool(decl.keeper.signature)
+    with_id = opts["id_doc"] and bool(decl.keeper.id_doc_file)
+    if signed and with_id:
+        messages.success(request, "PDF generato, firmato e con il documento d'identità allegato: pronto da inviare.")
+    else:
+        todo = [t for t, ok in (("firmalo", signed), ("allega copia del documento d'identità", with_id)) if not ok]
+        messages.success(request, f"PDF generato: {' e '.join(todo)} prima dell'invio.")
     return redirect(decl)
 
 
 def preview(request, pk):
     _guard(request, edit=False)
     decl = _get(request, pk)
-    pdf = render_pdf(decl.kind, get_form_data(decl))
+    pdf = render_declaration(decl)
     resp = HttpResponse(pdf, content_type="application/pdf")
     resp["Content-Disposition"] = f'inline; filename="{_filename(decl)}"'
     return resp
@@ -268,8 +317,11 @@ def bundle(request, pk):
     buf = io.BytesIO()
     checklist = [f"Pratica: {decl.get_kind_display()} – evento {decl.event_date:%d/%m/%Y}", ""]
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr(_filename(decl), render_pdf(decl.kind, get_form_data(decl)))
-        checklist.append("[ ] Modulo compilato e FIRMATO")
+        zf.writestr(_filename(decl), render_declaration(decl))
+        opts = output_options(decl)
+        signed = opts["signature"] and bool(decl.keeper.signature)
+        id_in_pdf = opts["id_doc"] and bool(decl.keeper.id_doc_file)
+        checklist.append(f"[{'x' if signed else ' '}] Modulo compilato e FIRMATO")
         for n, att in enumerate(decl.attachments.all(), start=1):
             name = slugify(Path(att.description).stem) or f"allegato-{n}"
             zf.writestr(f"allegati/{n:02d}_{name}{Path(att.file.name).suffix}", read_plain(att.file))
@@ -278,7 +330,8 @@ def bundle(request, pk):
         if decl.keeper.id_doc_file:
             zf.writestr(f"documento_detentore{Path(decl.keeper.id_doc_file.name).suffix}",
                         read_plain(decl.keeper.id_doc_file))
-        checklist.append(f"[{'x' if decl.keeper.id_doc_file else ' '}] Copia documento d'identità del dichiarante")
+        checklist.append(f"[{'x' if decl.keeper.id_doc_file else ' '}] Copia documento d'identità del dichiarante"
+                         + (" (già in coda al PDF)" if id_in_pdf else ""))
         if decl.kind == Declaration.Kind.TRANSFER:
             cp = decl.counterparty
             if cp and cp.id_doc_file:

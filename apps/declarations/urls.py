@@ -14,6 +14,7 @@ urlpatterns = [
     path("<int:pk>/", lr(views.detail), name="detail"),
     path("<int:pk>/modulo/", lr(views.edit_form_data), name="edit_form"),
     path("<int:pk>/genera/", lr(views.generate), name="generate"),
+    path("<int:pk>/firma-e-allegati/", lr(views.pdf_options), name="pdf_options"),
     path("<int:pk>/anteprima/", lr(views.preview), name="preview"),
     path("<int:pk>/pdf/", lr(views.download), name="download"),
     path("<int:pk>/busta/", lr(views.envelope), name="envelope"),

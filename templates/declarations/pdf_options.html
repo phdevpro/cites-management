@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Firma e allegati{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-7"><div class="card"><div class="card-body p-4">
+  <h1 class="h4">Firma e documento d'identità</h1>
+  <p class="text-muted small">{{ decl.get_kind_display }} del {{ decl.event_date|date:"d/m/Y" }}.
+    Le denunce vanno firmate e accompagnate da copia del documento d'identità del dichiarante (art. 38 DPR 445/2000).</p>
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    {% for e in form.non_field_errors %}<div class="alert alert-danger">{{ e }}</div>{% endfor %}
+
+    <h2 class="h6 mt-3">Firma</h2>
+    {% if keeper.signature %}
+      <div class="border rounded p-2 mb-2 bg-white text-center"><img src="{{ keeper.signature.url }}" alt="Firma salvata" style="max-height:70px;max-width:100%"></div>
+    {% else %}
+      <div class="alert alert-warning py-2 small">Nel profilo non c'è ancora una firma.{% if not can_upload %} Solo il titolare può caricarla.{% endif %}</div>
+    {% endif %}
+    {% include "_field.html" with field=form.include_signature %}
+    {% if form.signature %}{% include "_field.html" with field=form.signature %}{% endif %}
+
+    <h2 class="h6 mt-3">Documento d'identità</h2>
+    {% if keeper.id_doc_file %}
+      <p class="small mb-2"><i class="bi bi-file-earmark-person"></i> Documento salvato nel profilo
+        {% if keeper.id_doc_expiry %}(scadenza {{ keeper.id_doc_expiry|date:"d/m/Y" }}){% endif %}
+        · <a href="{{ keeper.id_doc_file.url }}" target="_blank">apri</a></p>
+      {% if id_expired %}<div class="alert alert-danger py-2 small">Il documento risulta scaduto: caricane uno valido.</div>{% endif %}
+    {% else %}
+      <div class="alert alert-warning py-2 small">Nel profilo non c'è ancora una copia del documento d'identità.{% if not can_upload %} Solo il titolare può caricarla.{% endif %}</div>
+    {% endif %}
+    {% include "_field.html" with field=form.include_id %}
+    {% if form.id_doc %}{% include "_field.html" with field=form.id_doc %}{% endif %}
+
+    <div class="d-flex gap-2 mt-3">
+      <button class="btn btn-success">Genera PDF</button>
+      <a class="btn btn-link" href="{{ decl.get_absolute_url }}">Annulla</a>
+    </div>
+    <p class="small text-muted mt-2 mb-0">Per generare senza firma o senza documento togli la spunta corrispondente.</p>
+  </form>
+</div></div></div></div>
+{% endblock %}
