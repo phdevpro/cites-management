@@ -6,7 +6,7 @@ from .models import TermsAcceptance
 
 
 def current_version() -> str:
-    return settings.LEGAL["updated"]
+    return settings.LEGAL.get("version") or settings.LEGAL["updated"]
 
 
 def needs_acceptance(user) -> bool:

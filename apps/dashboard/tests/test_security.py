@@ -86,7 +86,7 @@ def test_turnstile_required_when_configured(client, settings, monkeypatch):
     page = client.get("/account/signup/").content.decode()
     assert 'data-sitekey="site"' in page and "challenges.cloudflare.com/turnstile" in page
     data = {"username": "bot", "email": "b@example.com", "password1": "Very-Strong-pw-91",
-            "password2": "Very-Strong-pw-91", "accept_terms": "on"}
+            "password2": "Very-Strong-pw-91", "accept_terms": "on", "accept_risk": "on"}
     assert "anti-bot" in client.post("/account/signup/", data).content.decode()
     assert not User.objects.filter(username="bot").exists()
 

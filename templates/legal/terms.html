@@ -1,6 +1,12 @@
 {% extends "legal/_base.html" %}
 {% block doc_title %}Termini di servizio{% endblock %}{% block doc_heading %}Termini di servizio{% endblock %}
 {% block doc %}
+<div class="alert alert-warning border-warning">
+  <strong>In breve: usi {{ SITE_NAME }} a tuo esclusivo rischio.</strong> È un progetto personale gratuito e open
+  source, fornito "così com'è" e senza garanzie. Chi lo usa se ne assume ogni responsabilità: il Gestore non risponde
+  di perdita di dati, errori nei moduli, scadenze, sanzioni o altri danni, nei limiti massimi consentiti dalla legge
+  (clausole 4, 5, 6, 9, 10 e 17).
+</div>
 <h2 class="h5 mt-4">1. Chi gestisce il servizio</h2>
 <p>{{ SITE_NAME }} è un <strong>progetto personale open source, senza scopo di lucro</strong>. Questa installazione è messa a disposizione gratuitamente, a titolo personale e non professionale, da {% include "legal/_provider.html" %}, persona fisica (di seguito "il Gestore"). Il Gestore non opera come impresa e non riceve alcun compenso. Registrandoti e usando il servizio accetti questi termini e l'<a href="{% url 'dashboard:privacy' %}">Informativa privacy</a>, che ne è parte integrante.</p>
 
@@ -59,5 +65,14 @@
 <p>Si applica la legge italiana. Per ogni controversia è competente in via esclusiva il foro di {% if LEGAL.forum %}{{ LEGAL.forum }}{% else %}residenza del Gestore{% endif %}, salvo diversa disposizione inderogabile di legge.</p>
 
 <h2 class="h5 mt-4">16. Approvazione specifica (artt. 1341 e 1342 c.c.)</h2>
-<p>L'utente dichiara di aver letto e di approvare specificamente le clausole 4 (cifratura e perdita della passphrase), 5 (perdita di dati e copie di sicurezza), 6 (responsabilità sugli adempimenti CITES), 9 (servizio "così com'è"), 10 (esclusione di responsabilità), 11 (manleva), 12 (sospensione e cessazione) e 15 (foro competente). L'approvazione avviene tramite l'apposita casella al momento della registrazione o dell'accettazione dei termini aggiornati, e viene registrata con data, ora e versione dei termini.</p>
+<p>L'utente dichiara di aver letto e di approvare specificamente le clausole 4 (cifratura e perdita della passphrase), 5 (perdita di dati e copie di sicurezza), 6 (responsabilità sugli adempimenti CITES), 9 (servizio "così com'è"), 10 (esclusione di responsabilità), 11 (manleva), 12 (sospensione e cessazione), 15 (foro competente) e 17 (assunzione del rischio). L'approvazione avviene tramite l'apposita casella al momento della registrazione o dell'accettazione dei termini aggiornati, e viene registrata con data, ora e versione dei termini.</p>
+
+<h2 class="h5 mt-4">17. Assunzione del rischio</h2>
+<p>L'utente dichiara di essere consapevole che {{ SITE_NAME }} è uno strumento gratuito realizzato a titolo personale,
+non professionale e senza scopo di lucro, e di utilizzarlo <strong>a proprio esclusivo rischio</strong>, assumendosi
+<strong>ogni responsabilità</strong> per l'uso del servizio, per i dati e i documenti inseriti o importati, per i moduli
+generati e il loro invio, per il rispetto degli obblighi di legge e per la conservazione di proprie copie dei dati.
+L'utente rinuncia a qualsiasi pretesa nei confronti del Gestore e degli autori del software, nei limiti massimi
+consentiti dalla legge (restano ferme soltanto le responsabilità non escludibili per legge, indicate al punto 10).
+L'accettazione di questa clausola avviene con un'apposita casella, separata da quella dei Termini.</p>
 {% endblock %}

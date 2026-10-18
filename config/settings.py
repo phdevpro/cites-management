@@ -192,8 +192,10 @@ LEGAL = {
     "email": os.environ.get("LEGAL_EMAIL", ""),
     "source_url": os.environ.get("SOURCE_URL", "https://github.com/phdevpro/cites-management"),
     "forum": os.environ.get("LEGAL_FORUM", ""),  # e.g. "Milano"
-    "updated": os.environ.get("LEGAL_UPDATED", "2026-10-18"),  # bump to require re-acceptance
-    "clauses": "4, 5, 6, 9, 10, 11, 12, 15",
+    "updated": os.environ.get("LEGAL_UPDATED", "2026-10-18"),  # date shown on the Terms
+    # version users accept: change it (e.g. 2026-11-01.1) whenever the Terms change -> everyone must accept again
+    "version": os.environ.get("LEGAL_VERSION", "2026-10-18.2"),
+    "clauses": "4, 5, 6, 9, 10, 11, 12, 15, 17",
 }
 SITE_NAME = os.environ.get("SITE_NAME", "CITES Manager")
 

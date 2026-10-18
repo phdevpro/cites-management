@@ -5,13 +5,26 @@ from django.contrib.auth.models import User
 from .models import DetentionSite, Keeper
 
 
+RISK_LABEL = (
+    "<strong>Uso il servizio a mio esclusivo rischio</strong> e me ne assumo ogni responsabilità: il Gestore non "
+    "risponde in alcun modo di perdita di dati, errori nei moduli, scadenze, sanzioni o di qualsiasi altro danno "
+    "(clausola 17 dei Termini)."
+)
+
 TERMS_LABEL = (
     "Ho letto e accetto i <a href=\"/termini/\" target=\"_blank\">Termini di servizio</a> e "
     "l'<a href=\"/privacy/\" target=\"_blank\">Informativa privacy</a>, e approvo specificamente ai sensi degli "
     "artt. 1341 e 1342 c.c. le clausole 4 (cifratura e perdita della passphrase), 5 (perdita di dati e backup), "
     "6 (responsabilità sugli adempimenti CITES), 9 (servizio \"così com'è\"), 10 (esclusione di responsabilità), "
-    "11 (manleva), 12 (sospensione e cessazione) e 15 (foro competente)."
+    "11 (manleva), 12 (sospensione e cessazione), 15 (foro competente) e 17 (assunzione del rischio)."
 )
+
+
+def risk_field():
+    return forms.BooleanField(
+        required=True, label=RISK_LABEL,
+        error_messages={"required": "Per usare il servizio devi accettare di farlo a tuo esclusivo rischio."},
+    )
 
 
 def terms_field():
@@ -56,6 +69,7 @@ def clean_id_document_upload(value):
 class SignupForm(UserCreationForm):
     email = forms.EmailField(required=True)
     accept_terms = terms_field()
+    accept_risk = risk_field()
 
     class Meta:
         model = User
@@ -64,6 +78,7 @@ class SignupForm(UserCreationForm):
 
 class AcceptTermsForm(forms.Form):
     accept_terms = terms_field()
+    accept_risk = risk_field()
 
 
 class KeeperForm(forms.ModelForm):

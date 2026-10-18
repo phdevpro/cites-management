@@ -2,9 +2,16 @@
 {% block content %}
 <div class="row justify-content-center"><div class="col-md-6"><div class="card"><div class="card-body">
   <h1 class="h4 mb-3">Registrazione</h1>
+  <div class="alert alert-warning border-warning small mb-3">
+  <strong><i class="bi bi-exclamation-triangle"></i> Uso a tuo esclusivo rischio.</strong>
+  {{ SITE_NAME }} è un progetto personale gratuito, offerto "così com'è" e senza alcuna garanzia. Chi lo usa se ne
+  assume ogni responsabilità: il Gestore non risponde di perdita di dati, errori nei moduli, scadenze, sanzioni o
+  qualsiasi altro danno. Conserva sempre copia dei tuoi documenti e verifica ogni modulo prima dell'invio.
+</div>
   <form method="post">{% csrf_token %}
-    {% for field in form %}{% if field.name != "accept_terms" %}{% include "_field.html" %}{% endif %}{% endfor %}
+    {% for field in form %}{% if field.name != "accept_terms" and field.name != "accept_risk" %}{% include "_field.html" %}{% endif %}{% endfor %}
     {% include "accounts/_terms_checkbox.html" with field=form.accept_terms %}
+    {% include "accounts/_terms_checkbox.html" with field=form.accept_risk %}
     {% for e in form.non_field_errors %}<div class="alert alert-danger">{{ e }}</div>{% endfor %}
     {% if turnstile_site_key %}<div class="cf-turnstile mb-3" data-sitekey="{{ turnstile_site_key }}" data-language="it"></div>{% endif %}
     <button class="btn btn-success w-100">Crea account</button>
