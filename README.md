@@ -149,3 +149,9 @@ uv run pytest
 - Termini e importi sono configurabili (`CITES_DEADLINES` in `config/settings.py`, tabella diritti in admin) e vanno
   verificati con l'ufficio competente.
 - La cartella `CITES Denuncia Tartarughe/` e `media/` contengono documenti personali e sono escluse da git.
+
+## Licenza
+
+Progetto personale open source, senza scopo di lucro, rilasciato con licenza [MIT](LICENSE).
+Chi installa una propria copia ne è l'unico gestore e responsabile; i Termini e l'Informativa privacy
+inclusi si configurano con le variabili `LEGAL_*` (vedi `deploy/stack.env.example`).

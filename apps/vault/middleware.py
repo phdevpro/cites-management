@@ -9,7 +9,8 @@ from . import services
 from .context import KeyRing, activate, deactivate
 from .models import UserKey
 
-EXEMPT_PREFIXES = ("/login/", "/logout/", "/account/signup/", "/vault/", "/static/", "/favicon.ico")
+EXEMPT_PREFIXES = ("/login/", "/logout/", "/account/signup/", "/account/termini/", "/termini/", "/privacy/", "/vault/",
+                   "/static/", "/favicon.ico")
 
 
 def _max_age():

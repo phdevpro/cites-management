@@ -60,6 +60,7 @@ MIDDLEWARE = [
     "simple_history.middleware.HistoryRequestMiddleware",
     "apps.vault.middleware.VaultActivateMiddleware",
     "apps.accounts.middleware.CurrentKeeperMiddleware",
+    "apps.accounts.middleware.TermsAcceptanceMiddleware",
     "apps.vault.middleware.VaultGateMiddleware",
 ]
 
@@ -76,6 +77,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.accounts.context_processors.keeper",
+                "apps.accounts.context_processors.legal",
             ],
         },
     },
@@ -176,3 +178,15 @@ if not DEBUG:
 # Encryption: scrypt cost for passphrases (2**15 ≈ 32 MB, ~0.1 s) and unlock lifetime
 VAULT_SCRYPT_N = int(os.environ.get("VAULT_SCRYPT_N", 2 ** 15))
 VAULT_UNLOCK_MAX_AGE = int(os.environ.get("VAULT_UNLOCK_MAX_AGE", 12 * 3600))
+
+# Who runs this instance (a private person: personal, non-commercial open-source project).
+# Set in the environment; the repo is public.
+LEGAL = {
+    "name": os.environ.get("LEGAL_NAME", ""),
+    "email": os.environ.get("LEGAL_EMAIL", ""),
+    "source_url": os.environ.get("SOURCE_URL", "https://github.com/phdevpro/cites-management"),
+    "forum": os.environ.get("LEGAL_FORUM", ""),  # e.g. "Pordenone"
+    "updated": os.environ.get("LEGAL_UPDATED", "2026-10-18"),  # bump to require re-acceptance
+    "clauses": "4, 5, 6, 9, 10, 11, 12, 15",
+}
+SITE_NAME = os.environ.get("SITE_NAME", "CITES Manager")

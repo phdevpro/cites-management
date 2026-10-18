@@ -5,12 +5,33 @@ from django.contrib.auth.models import User
 from .models import DetentionSite, Keeper
 
 
+TERMS_LABEL = (
+    "Ho letto e accetto i <a href=\"/termini/\" target=\"_blank\">Termini di servizio</a> e "
+    "l'<a href=\"/privacy/\" target=\"_blank\">Informativa privacy</a>, e approvo specificamente ai sensi degli "
+    "artt. 1341 e 1342 c.c. le clausole 4 (cifratura e perdita della passphrase), 5 (perdita di dati e backup), "
+    "6 (responsabilità sugli adempimenti CITES), 9 (servizio \"così com'è\"), 10 (esclusione di responsabilità), "
+    "11 (manleva), 12 (sospensione e cessazione) e 15 (foro competente)."
+)
+
+
+def terms_field():
+    return forms.BooleanField(
+        required=True, label=TERMS_LABEL,
+        error_messages={"required": "Per continuare devi accettare i Termini e approvare le clausole indicate."},
+    )
+
+
 class SignupForm(UserCreationForm):
     email = forms.EmailField(required=True)
+    accept_terms = terms_field()
 
     class Meta:
         model = User
         fields = ("username", "email")
+
+
+class AcceptTermsForm(forms.Form):
+    accept_terms = terms_field()
 
 
 class KeeperForm(forms.ModelForm):

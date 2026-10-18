@@ -77,6 +77,9 @@
   {% endfor %}
   {% block content %}{% endblock %}
 </main>
+<footer class="container-xl pb-4 small text-muted text-center no-print">
+  {{ SITE_NAME }} · <a class="text-muted" href="{% url 'dashboard:terms' %}">Termini di servizio</a> · <a class="text-muted" href="{% url 'dashboard:privacy' %}">Privacy</a>
+</footer>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://unpkg.com/htmx.org@1.9.12"></script>
 <script>document.body.addEventListener('htmx:configRequest', e => { e.detail.headers['X-CSRFToken'] = '{{ csrf_token }}'; });</script>

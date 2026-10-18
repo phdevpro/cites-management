@@ -41,7 +41,8 @@ def test_viewer_cannot_edit(client, keeper, hermanni):
 @pytest.mark.django_db
 def test_signup_then_keeper_required(client):
     resp = client.post("/account/signup/", {"username": "new", "email": "n@example.com",
-                                            "password1": "Very-Strong-pw-91", "password2": "Very-Strong-pw-91"})
+                                            "password1": "Very-Strong-pw-91", "password2": "Very-Strong-pw-91",
+                                            "accept_terms": "on"})
     assert resp.status_code == 302
     assert client.get("/").url == "/vault/configura/"  # encryption keys first
 

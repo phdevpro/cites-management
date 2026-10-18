@@ -1,0 +1,40 @@
+{% extends "legal/_base.html" %}
+{% block doc_title %}Informativa privacy{% endblock %}{% block doc_heading %}Informativa privacy{% endblock %}
+{% block doc %}
+<p>Informativa ai sensi degli artt. 13 e 14 del Regolamento (UE) 2016/679 ("GDPR").</p>
+
+<h2 class="h5 mt-4">1. Titolare e responsabile del trattamento</h2>
+<p>Per i dati del tuo account il titolare del trattamento è {% include "legal/_provider.html" %}, persona fisica che gestisce questa installazione a titolo personale e senza scopo di lucro ("il Gestore").</p>
+<p>Per i dati che inserisci nel tuo profilo detentore (tue anagrafiche, esemplari, documenti, dati di cedenti, cessionari e altri terzi) <strong>il titolare sei tu</strong>; il Gestore li tratta solo per tuo conto, come responsabile del trattamento ai sensi dell'art. 28 GDPR, per erogare il servizio e secondo le istruzioni contenute nei <a href="{% url 'dashboard:terms' %}">Termini di servizio</a>. Il Gestore non può leggerli perché sono cifrati (punto 4).</p>
+
+<h2 class="h5 mt-4">2. Dati trattati</h2>
+<ul>
+  <li><strong>Account</strong>: nome utente, email, password (conservata solo come hash), ruolo nei profili condivisi.</li>
+  <li><strong>Accettazione dei termini</strong>: versione accettata, data e ora, indirizzo IP.</li>
+  <li><strong>Profilo detentore e archivio</strong> (inseriti da te): dati anagrafici e di contatto, codice fiscale, estremi e copie dei documenti d'identità, siti di detenzione, dati di controparti, esemplari, marcature, documenti e protocolli CITES, ricevute, documenti importati.</li>
+  <li><strong>Dati tecnici</strong>: log del server (indirizzo IP, data e ora, pagina richiesta) per sicurezza e diagnosi.</li>
+</ul>
+
+<h2 class="h5 mt-4">3. Finalità e basi giuridiche</h2>
+<ul>
+  <li>Erogazione del servizio richiesto (art. 6.1.b GDPR).</li>
+  <li>Prova dell'accettazione dei termini, sicurezza del servizio e tutela dei diritti del Gestore (legittimo interesse, art. 6.1.f).</li>
+  <li>Adempimento di obblighi di legge (art. 6.1.c).</li>
+  <li>Invio di promemoria sulle scadenze, che contengono solo il numero di scadenze e nessun dato personale del profilo (esecuzione del servizio).</li>
+</ul>
+
+<h2 class="h5 mt-4">4. Cifratura</h2>
+<p>I dati personali del profilo e tutti i documenti caricati sono cifrati (AES-256-GCM) con una chiave del profilo, a sua volta protetta dalla passphrase di cifratura e dalla chiave di recupero dei soli utenti autorizzati. Il Gestore non conserva in chiaro passphrase, chiavi di recupero o chiavi dei dati. Restano leggibili dal sistema solo le informazioni necessarie al funzionamento (date degli eventi, specie, quantità, stati delle pratiche, nome utente ed email di accesso).</p>
+
+<h2 class="h5 mt-4">5. Conservazione</h2>
+<p>I dati dell'account e del profilo sono conservati finché l'account è attivo o finché non li cancelli. Le registrazioni di accettazione dei termini sono conservate per la durata dell'account e successivamente per il periodo di prescrizione dei diritti (10 anni). I log tecnici sono conservati per un periodo limitato. Le copie di sicurezza vengono sovrascritte secondo il loro ciclo di rotazione.</p>
+
+<h2 class="h5 mt-4">6. Destinatari</h2>
+<p>I dati non sono venduti né ceduti a terzi. Possono essere trattati da fornitori tecnici di cui il Gestore si avvale (infrastruttura, servizio email), nominati responsabili del trattamento. Le pratiche CITES vengono trasmesse agli uffici competenti <strong>da te</strong>, non dal servizio. Eventuali trasferimenti fuori dallo Spazio economico europeo avvengono solo con le garanzie previste dagli artt. 44-49 GDPR.</p>
+
+<h2 class="h5 mt-4">7. Cookie</h2>
+<p>Il servizio usa solo cookie tecnici necessari: sessione di accesso, protezione CSRF e un cookie cifrato che mantiene sbloccati i dati durante la sessione. Non sono usati cookie di profilazione o di analisi, quindi non è richiesto il consenso.</p>
+
+<h2 class="h5 mt-4">8. Diritti dell'interessato</h2>
+<p>Puoi esercitare i diritti di accesso, rettifica, cancellazione, limitazione, portabilità e opposizione (artt. 15-22 GDPR){% if LEGAL.email %} scrivendo a {{ LEGAL.email }}{% endif %}. Per i dati di cui sei titolare (punto 1) le richieste dei terzi interessati vanno gestite da te; il Gestore ti assisterà nei limiti di quanto tecnicamente possibile, considerato che non può decifrare i dati. Hai diritto di proporre reclamo al Garante per la protezione dei dati personali (www.garanteprivacy.it).</p>
+{% endblock %}

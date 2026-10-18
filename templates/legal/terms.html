@@ -1,0 +1,63 @@
+{% extends "legal/_base.html" %}
+{% block doc_title %}Termini di servizio{% endblock %}{% block doc_heading %}Termini di servizio{% endblock %}
+{% block doc %}
+<h2 class="h5 mt-4">1. Chi gestisce il servizio</h2>
+<p>{{ SITE_NAME }} è un <strong>progetto personale open source, senza scopo di lucro</strong>. Questa installazione è messa a disposizione gratuitamente, a titolo personale e non professionale, da {% include "legal/_provider.html" %}, persona fisica (di seguito "il Gestore"). Il Gestore non opera come impresa e non riceve alcun compenso. Registrandoti e usando il servizio accetti questi termini e l'<a href="{% url 'dashboard:privacy' %}">Informativa privacy</a>, che ne è parte integrante.</p>
+
+<h2 class="h5 mt-4">2. Il servizio</h2>
+<p>{{ SITE_NAME }} è un gestionale per detentori e allevatori di esemplari di specie protette dalla Convenzione CITES: registro degli esemplari, compilazione di bozze dei moduli (es. SCT1/A, SCT1/B, SCT3, SCT5), archivio di documenti, scadenzario e registro di carico e scarico. {{ SITE_NAME }} <strong>non è un servizio pubblico</strong> e non ha alcun legame con il Ministero dell'Ambiente, con l'Arma dei Carabinieri o con i Servizi CITES territoriali: le pratiche vanno sempre presentate dall'utente agli uffici competenti. Il servizio non costituisce consulenza legale o tecnica.</p>
+<p>Il codice sorgente è pubblico{% if LEGAL.source_url %} (<a href="{{ LEGAL.source_url }}" target="_blank" rel="noopener">{{ LEGAL.source_url }}</a>){% endif %}. Chiunque installi e gestisca una propria copia del software ne è l'unico gestore e responsabile: questi termini riguardano esclusivamente l'installazione gestita dal Gestore indicato al punto 1, e gli autori del software non rispondono dell'uso che altri ne fanno.</p>
+
+<h2 class="h5 mt-4">3. Account e sicurezza</h2>
+<p>Il servizio è riservato a maggiorenni. Sei responsabile della riservatezza della password di accesso, della passphrase di cifratura e della chiave di recupero, e di ogni attività svolta con il tuo account o dagli utenti a cui concedi l'accesso al tuo profilo.</p>
+
+<h2 class="h5 mt-4">4. Cifratura, passphrase e chiave di recupero: leggi con attenzione</h2>
+<p>I dati personali e i documenti caricati sono cifrati con chiavi che possono essere sbloccate solo con la tua <strong>passphrase di cifratura</strong> o con la tua <strong>chiave di recupero</strong>. Il Gestore non conosce né conserva in chiaro la passphrase, la chiave di recupero o le chiavi dei dati, e <strong>non può in alcun modo recuperarle o decifrare i dati</strong>.</p>
+<p>Se perdi sia la passphrase sia la chiave di recupero, i dati e i documenti cifrati sono <strong>persi definitivamente</strong>, senza alcuna possibilità di recupero da parte del Gestore. La custodia della passphrase e della chiave di recupero è esclusivamente a tuo carico; lo stesso vale se vengono sottratte o usate da terzi.</p>
+
+<h2 class="h5 mt-4">5. Perdita di dati e copie di sicurezza</h2>
+<p>Il servizio <strong>non sostituisce la conservazione degli originali</strong>: sei tenuto a conservare autonomamente, anche fuori dal servizio, copia dei documenti CITES, delle denunce firmate e inviate, delle ricevute e di ogni dato necessario ai tuoi adempimenti, e ad effettuarne periodicamente l'esportazione (PDF, XLSX, pacchetti ZIP).</p>
+<p>Le eventuali copie di sicurezza effettuate dal Gestore sono una misura tecnica interna e non costituiscono un servizio di backup garantito. <strong>Il Gestore non risponde della perdita, corruzione, cancellazione, indisponibilità o illeggibilità dei dati e dei documenti, per qualsiasi causa</strong>, inclusi a titolo esemplificativo: perdita della passphrase o della chiave di recupero, errori o malfunzionamenti del software, aggiornamenti, migrazioni o procedure di cifratura, guasti hardware, di rete o dei sistemi di archiviazione, attacchi informatici, errori umani, cancellazioni da parte dell'utente o di utenti da lui autorizzati, cessazione del servizio.</p>
+
+<h2 class="h5 mt-4">6. Adempimenti CITES: responsabilità dell'utente</h2>
+<p>I moduli generati sono <strong>bozze</strong> compilate a partire dai dati inseriti o importati dall'utente: devi verificarne la correttezza e la completezza, l'uso della versione vigente del modulo, la firma e la presentazione nei tempi e nei modi previsti. Scadenze, importi dei diritti, classificazioni delle specie (Allegati, Appendici) e indicazioni normative mostrati dal servizio sono <strong>indicativi</strong> e possono non essere aggiornati: fanno fede la normativa vigente e le indicazioni del Servizio CITES competente. Il rispetto della L. 150/1992, dei Regolamenti (CE) 338/97 e 865/2006, del D.M. 8 gennaio 2002 e di ogni altro obbligo resta di <strong>esclusiva responsabilità dell'utente</strong>, così come ogni sanzione derivante da denunce mancanti, tardive, errate o incomplete. Anche i dati estratti automaticamente dai documenti importati vanno sempre verificati.</p>
+
+<h2 class="h5 mt-4">7. Dati di terzi</h2>
+<p>Per i dati personali di terzi che inserisci (es. cedenti, cessionari, veterinari, copie di documenti d'identità) sei titolare del trattamento: garantisci di averli raccolti lecitamente, di averne informato gli interessati e di usarli solo per gli adempimenti connessi alla detenzione degli esemplari. Il Gestore agisce come responsabile del trattamento ai sensi dell'art. 28 GDPR, come descritto nell'Informativa privacy.</p>
+
+<h2 class="h5 mt-4">8. Usi vietati</h2>
+<p>È vietato usare il servizio per attività illecite, inclusi il commercio o la detenzione illegale di esemplari, la falsificazione di documenti o la registrazione di dati non veritieri, nonché per attività che danneggino il servizio o altri utenti. Il Gestore può sospendere o chiudere gli account che violano questi termini.</p>
+
+<h2 class="h5 mt-4">9. Servizio fornito "così com'è"</h2>
+<p>Il servizio è fornito gratuitamente e senza scopo di lucro, "così com'è" e "come disponibile", senza garanzie espresse o implicite di continuità, disponibilità, assenza di errori, correttezza dei moduli generati o dei dati estratti, idoneità a uno scopo particolare o compatibilità con le richieste dei singoli uffici. Non è garantito il recapito delle email di promemoria né il funzionamento dei servizi di terzi (hosting, rete, email, Species+).</p>
+
+<h2 class="h5 mt-4">10. Esclusione di responsabilità</h2>
+<p>Nei limiti massimi consentiti dalla legge, il Gestore <strong>non risponde</strong> di alcun danno, diretto o indiretto, derivante dall'uso o dal mancato uso del servizio, e in particolare:</p>
+<ul>
+  <li>della <strong>perdita di dati o documenti</strong> per qualsiasi causa, come indicato ai punti 4 e 5;</li>
+  <li>di sanzioni, sequestri, contestazioni o altre conseguenze derivanti da denunce o comunicazioni mancanti, tardive, errate o incomplete, anche se predisposte con il servizio;</li>
+  <li>di scadenze non segnalate o segnalate in modo errato, di importi o classificazioni non aggiornati;</li>
+  <li>di accessi ai dati ottenuti tramite le credenziali, la passphrase, la chiave di recupero o i dispositivi dell'utente o degli utenti da lui autorizzati;</li>
+  <li>di interruzioni, ritardi o malfunzionamenti dovuti a terzi, forza maggiore, attacchi informatici, guasti di rete o dei dispositivi;</li>
+  <li>di mancato guadagno, danni d'immagine o danni consequenziali di qualsiasi natura.</li>
+</ul>
+<p>Trattandosi di un servizio gratuito offerto a titolo personale, ogni responsabilità del Gestore verso l'utente è esclusa. Restano ferme soltanto le responsabilità che per legge non possono essere escluse o limitate (dolo o colpa grave ai sensi dell'art. 1229 c.c., danni alla persona).</p>
+
+<h2 class="h5 mt-4">11. Manleva</h2>
+<p>L'utente si impegna a tenere indenne il Gestore da qualsiasi pretesa, sanzione o spesa (incluse quelle legali) derivante dall'uso del servizio in violazione di questi termini o della legge, dai dati di terzi inseriti senza idonea base giuridica, o dalla violazione degli obblighi in materia CITES.</p>
+
+<h2 class="h5 mt-4">12. Sospensione e cessazione del servizio</h2>
+<p>Il Gestore può sospendere o chiudere un account o cessare il servizio in qualsiasi momento, anche per motivi personali, di sicurezza, legali o tecnici. In caso di cessazione volontaria del servizio avviserà gli utenti via email con almeno 30 giorni di anticipo, così che possano esportare i propri dati; nessun indennizzo è dovuto.</p>
+
+<h2 class="h5 mt-4">13. Conservazione e cancellazione</h2>
+<p>I dati restano nel servizio finché l'utente non li cancella o chiede la chiusura dell'account. La cancellazione è definitiva; le copie di sicurezza tecniche vengono sovrascritte secondo il loro ciclo di rotazione.</p>
+
+<h2 class="h5 mt-4">14. Modifiche</h2>
+<p>Il Gestore può aggiornare questi termini. In caso di modifiche ti verrà chiesto di accettarli di nuovo al primo accesso successivo; se non li accetti puoi esportare i tuoi dati e chiedere la chiusura dell'account.</p>
+
+<h2 class="h5 mt-4">15. Legge applicabile e foro</h2>
+<p>Si applica la legge italiana. Per ogni controversia è competente in via esclusiva il foro di {% if LEGAL.forum %}{{ LEGAL.forum }}{% else %}residenza del Gestore{% endif %}, salvo diversa disposizione inderogabile di legge.</p>
+
+<h2 class="h5 mt-4">16. Approvazione specifica (artt. 1341 e 1342 c.c.)</h2>
+<p>L'utente dichiara di aver letto e di approvare specificamente le clausole 4 (cifratura e perdita della passphrase), 5 (perdita di dati e copie di sicurezza), 6 (responsabilità sugli adempimenti CITES), 9 (servizio "così com'è"), 10 (esclusione di responsabilità), 11 (manleva), 12 (sospensione e cessazione) e 15 (foro competente). L'approvazione avviene tramite l'apposita casella al momento della registrazione o dell'accettazione dei termini aggiornati, e viene registrata con data, ora e versione dei termini.</p>
+{% endblock %}

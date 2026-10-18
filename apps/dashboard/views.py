@@ -20,3 +20,11 @@ def home(request):
 
 def guide(request):
     return render(request, "dashboard/guide.html")
+
+
+def terms_page(request):
+    return render(request, "legal/terms.html")
+
+
+def privacy_page(request):
+    return render(request, "legal/privacy.html")

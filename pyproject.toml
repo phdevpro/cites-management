@@ -3,6 +3,8 @@ name = "cites-management"
 version = "0.1.0"
 description = "Gestione denunce CITES (nascite, decessi, cessioni) per detentori italiani"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
     { name = "phdevpro", email = "info@phdevpro.com" }
 ]

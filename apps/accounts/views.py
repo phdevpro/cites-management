@@ -5,11 +5,13 @@ from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from apps.vault import services as vault
 
-from .forms import DetentionSiteForm, KeeperForm, MemberInviteForm, SignupForm
+from . import terms
+from .forms import AcceptTermsForm, DetentionSiteForm, KeeperForm, MemberInviteForm, SignupForm
 from .middleware import SESSION_KEY
 from .models import DetentionSite, Membership
 
@@ -18,10 +20,24 @@ def signup(request):
     form = SignupForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         user = form.save()
+        terms.record(user, request)
         login(request, user)
         messages.success(request, "Account creato. Inserisci ora i dati del detentore.")
         return redirect("accounts:keeper_create")
     return render(request, "registration/signup.html", {"form": form})
+
+
+@login_required
+def accept_terms(request):
+    form = AcceptTermsForm(request.POST or None)
+    nxt = request.POST.get("next") or request.GET.get("next") or ""
+    if not url_has_allowed_host_and_scheme(nxt, {request.get_host()}, request.is_secure()):
+        nxt = ""
+    if request.method == "POST" and form.is_valid():
+        terms.record(request.user, request)
+        return redirect(nxt or "dashboard:home")
+    return render(request, "accounts/accept_terms.html", {"form": form, "next": nxt,
+                                                          "updated": terms.needs_acceptance(request.user)})
 
 
 @login_required

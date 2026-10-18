@@ -9,6 +9,7 @@ from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
 from django.db import connection, transaction
 
+from apps.accounts import terms
 from apps.accounts.models import Keeper, Membership
 from apps.declarations import services
 from apps.declarations.models import Declaration
@@ -126,6 +127,7 @@ def test_wrap_unwrap_and_recovery_code():
 @pytest.mark.django_db
 def test_setup_recovery_unlock_flow(client):
     user = User.objects.create_user("new", "n@example.com", "pw-test-123")
+    terms.record(user)
     client.force_login(user)
     assert client.get("/").url == "/vault/configura/"
     resp = client.post("/vault/configura/", {"passphrase": "short", "confirm": "short"})
@@ -181,6 +183,7 @@ def test_cookie_is_bound_to_session(client, client_logged, user):
 def test_share_with_member(client, client_logged, keeper, user, hermanni):
     Specimen.objects.create(keeper=keeper, species=hermanni, name="Ercole")
     no_key = User.objects.create_user("nokey", "", "pw-test-123")
+    terms.record(no_key)
     resp = client_logged.post("/account/detentore/membri/", {"username": "nokey", "role": "editor"}, follow=True)
     assert "non ha ancora configurato" in resp.content.decode()
 

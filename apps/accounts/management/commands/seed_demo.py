@@ -8,6 +8,7 @@ from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
+from apps.accounts import terms
 from apps.accounts.models import CitesOffice, DetentionSite, Keeper, Membership
 from apps.declarations import services
 from apps.registry.models import CitesDocument, Counterparty
@@ -26,6 +27,7 @@ class Command(BaseCommand):
                                                                         "is_staff": True, "is_superuser": True})
         user.set_password(password)
         user.save()
+        terms.record(user)
         if Membership.objects.filter(user=user).exists():
             self.stdout.write("Demo già presente.")
             return

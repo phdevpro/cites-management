@@ -144,3 +144,23 @@ class Membership(models.Model):
     @property
     def can_edit(self):
         return self.role in (self.Role.OWNER, self.Role.EDITOR)
+
+
+class TermsAcceptance(models.Model):
+    """Proof that a user accepted a version of the Terms and Privacy notice, including the specific
+    approval of the onerous clauses (art. 1341-1342 c.c.). Kept for the life of the account."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="terms_acceptances")
+    version = models.CharField(_("versione"), max_length=20)
+    clauses = models.CharField(_("clausole approvate specificamente"), max_length=100, blank=True)
+    accepted_at = models.DateTimeField(_("accettato il"), auto_now_add=True)
+    ip_address = models.CharField(_("indirizzo IP"), max_length=45, blank=True)
+
+    class Meta:
+        ordering = ["-accepted_at"]
+        unique_together = [("user", "version")]
+        verbose_name = _("accettazione termini")
+        verbose_name_plural = _("accettazioni termini")
+
+    def __str__(self):
+        return f"{self.user} – {self.version}"

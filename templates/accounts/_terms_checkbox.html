@@ -1,0 +1,5 @@
+<div class="mb-3 form-check">
+  <input type="checkbox" class="form-check-input" name="{{ field.html_name }}" id="{{ field.id_for_label }}" {% if field.value %}checked{% endif %} required>
+  <label class="form-check-label small" for="{{ field.id_for_label }}">{{ field.label|safe }}</label>
+  {% for e in field.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+</div>

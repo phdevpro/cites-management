@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Termini di servizio{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-7"><div class="card"><div class="card-body p-4">
+  <h1 class="h4">Termini di servizio</h1>
+  <p>I <a href="{% url 'dashboard:terms' %}" target="_blank">Termini di servizio</a> e l'<a href="{% url 'dashboard:privacy' %}" target="_blank">Informativa privacy</a>
+     sono stati aggiornati il {{ LEGAL.updated }}. Leggili e accettali per continuare a usare {{ SITE_NAME }}.</p>
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    {% include "accounts/_terms_checkbox.html" with field=form.accept_terms %}
+    <button class="btn btn-success">Accetto e continuo</button>
+  </form>
+  <form method="post" action="{% url 'logout' %}" class="mt-3">{% csrf_token %}<button class="btn btn-link p-0 small">Esci senza accettare</button></form>
+</div></div></div></div>
+{% endblock %}

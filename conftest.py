@@ -3,6 +3,7 @@ from datetime import date
 import pytest
 from django.contrib.auth.models import User
 
+from apps.accounts import terms
 from apps.accounts.models import CitesOffice, DetentionSite, Keeper, Membership
 from apps.species.models import Species
 from apps.vault import services as vault
@@ -27,6 +28,7 @@ def keyring():
 
 def make_vault_user(username, passphrase=PASSPHRASE):
     user = User.objects.create_user(username, f"{username}@example.com", "pw-test-123")
+    terms.record(user)
     private, code = vault.create_user_key(user, passphrase)
     vault.confirm_recovery(user, code)
     user.private_key = private
