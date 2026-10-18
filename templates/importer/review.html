@@ -23,6 +23,22 @@
 <div class="col-lg-5">
   {% for n in parsed.notes %}<div class="alert alert-warning py-1 small">{{ n }}</div>{% endfor %}
   {% if f.error %}<div class="alert alert-danger small">{{ f.error }}</div>{% endif %}
+  {% if is_ai %}
+  <div class="card mb-3"><div class="card-body p-2">
+    <h2 class="h6">Documenti trovati dall'AI nel file</h2>
+    <table class="table table-sm small mb-0">
+    {% for d in parsed.documents %}
+      <tr class="{% if forloop.counter0 == doc_index %}table-active{% endif %}">
+        <td><a href="?doc={{ forloop.counter0 }}">{{ d.type|ai_doc_label }}</a><br><span class="text-muted">pag. {{ d.pages|join:", " }} · {% widthratio d.confidence 1 100 %}%</span></td>
+        <td>{{ d.summary }}{% if d.species %}<br><em>{{ d.species }}</em>{% if d.quantity %} ×{{ d.quantity }}{% endif %}{% endif %}
+          {% if d.event_date %} · {{ d.event_date }}{% endif %}{% if d.protocol_number %} · prot. {{ d.protocol_number }}{% endif %}{% if d.certificate_number %} · cert. {{ d.certificate_number }}{% endif %}</td>
+        <td><span class="badge bg-{{ d.result|ai_result_color }} text-dark-emphasis">{{ d.result|ai_result_label }}</span><br><span class="text-muted">{{ d.result.message }}</span></td>
+      </tr>
+    {% endfor %}
+    </table>
+    {% if parsed.identity_pages %}<p class="small text-muted mb-0 mt-1"><i class="bi bi-shield-lock"></i> Pagine {{ parsed.identity_pages|join:", " }}: documento d'identità, non inviato all'AI.</p>{% endif %}
+  </div></div>
+  {% endif %}
   {% if parsed.rows %}
   <div class="card mb-3"><div class="card-body p-2"><h2 class="h6">Righe riconosciute</h2>
     <table class="table table-sm small mb-0">{% for r in parsed.rows %}<tr>{% for k, v in r.items %}<td>{{ v }}</td>{% endfor %}</tr>{% endfor %}</table>
@@ -35,7 +51,12 @@
     </div>
   {% endif %}
   <div class="card"><div class="card-body">
+  {% if is_ai and doc_index is None %}
+  <div class="alert alert-success">Tutti i documenti di questo file sono stati gestiti.</div>
+  {% endif %}
   <form method="post">{% csrf_token %}
+    {% if is_ai and doc_index is not None %}<input type="hidden" name="doc_index" value="{{ doc_index }}">
+    <p class="small mb-2">Registra a mano il documento evidenziato nella tabella sopra.</p>{% endif %}
     {% for e in form.non_field_errors %}<div class="alert alert-danger">{{ e }}</div>{% endfor %}
     {% include "_field.html" with field=form.action %}
     <div data-for="birth death">{% include "_field.html" with field=form.species %}{% include "_field.html" with field=form.quantity %}{% include "_field.html" with field=form.event_date %}{% include "_field.html" with field=form.signed_on %}</div>
@@ -52,6 +73,7 @@
     <div data-for="death document payment">{% include "_field.html" with field=form.notes %}</div>
     {% if current_membership.can_edit %}
     <button class="btn btn-success">Conferma e registra</button>
+    {% if is_ai and doc_index is not None %}<button name="ignore_doc" value="1" class="btn btn-outline-secondary" formnovalidate>Ignora questo documento</button>{% endif %}
     <button name="reanalyze" value="1" class="btn btn-link" formnovalidate>Rianalizza</button>
     {% endif %}
   </form>

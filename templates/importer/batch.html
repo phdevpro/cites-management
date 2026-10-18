@@ -15,6 +15,12 @@
 </div></div>
 {% endif %}
 <form class="mb-3"><select name="status" class="form-select w-auto" onchange="this.form.submit()"><option value="">Tutti</option>{% for v,l in statuses %}<option value="{{ v }}" {% if request.GET.status == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></form>
+{% if ai_enabled and not queue and to_review and current_membership.can_edit %}
+<div class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center gap-2">
+  <span><strong>{{ to_review }}</strong> file con documenti da verificare. Dopo aver aggiunto specie o esemplari mancanti puoi riprovare l'inserimento automatico.</span>
+  <form method="post">{% csrf_token %}<button name="autoapply" value="1" class="btn btn-sm btn-warning">Riapplica automaticamente</button></form>
+</div>
+{% endif %}
 <form method="post" action="{% url 'importer:delete_files' batch.pk %}" id="files-form">{% csrf_token %}
 {% if current_membership.can_edit %}
 <div class="d-flex flex-wrap gap-2 mb-2">
@@ -30,6 +36,10 @@
 <td><div class="progress" style="width:80px;height:6px"><div class="progress-bar {% if f.confidence < 0.5 %}bg-warning{% endif %}" style="width:{% widthratio f.confidence 1 100 %}%"></div></div></td>
 <td><small>{{ f.method }}</small></td>
 <td><span class="badge bg-{{ f.status|status_color }}">{{ f.get_status_display }}</span></td></tr>
+{% if f.parsed.ai %}<tr class="small"><td></td><td colspan="6" class="pt-0 border-top-0">
+  {% for d in f.parsed.documents %}<div><span class="badge bg-{{ d.result|ai_result_color }} text-dark-emphasis">{{ d.result|ai_result_label }}</span>
+    {{ d.type|ai_doc_label }}{% if d.pages %} (pag. {{ d.pages|join:", " }}){% endif %} – <span class="text-muted">{{ d.result.message|default:d.summary }}</span></div>{% endfor %}
+</td></tr>{% endif %}
 {% endfor %}
 </table></div></div>
 </form>

@@ -32,6 +32,14 @@
 <h2 class="h5 mt-4">6. Destinatari</h2>
 <p>I dati non sono venduti né ceduti a terzi. Possono essere trattati da fornitori tecnici di cui il Gestore si avvale (infrastruttura, servizio email), nominati responsabili del trattamento. Le pratiche CITES vengono trasmesse agli uffici competenti <strong>da te</strong>, non dal servizio. Eventuali trasferimenti fuori dallo Spazio economico europeo avvengono solo con le garanzie previste dagli artt. 44-49 GDPR.</p>
 
+{% if AI_PROVIDER %}
+<h2 class="h5 mt-4">6-bis. Lettura automatica dei documenti importati</h2>
+<p>Quando importi documenti precedenti, le pagine (escluse quelle riconosciute come documenti d'identità, che non
+vengono mai inviate) sono elaborate da {{ AI_PROVIDER }}, servizio di intelligenza artificiale con server nell'Unione
+europea, nominato responsabile del trattamento, al solo scopo di estrarne i dati. Il testo estratto viene poi
+conservato cifrato nel servizio.</p>
+{% endif %}
+
 <h2 class="h5 mt-4">7. Cookie</h2>
 <p>Il servizio usa solo cookie tecnici necessari: sessione di accesso, protezione CSRF e un cookie cifrato che mantiene sbloccati i dati durante la sessione. Non sono usati cookie di profilazione o di analisi, quindi non è richiesto il consenso.</p>
 

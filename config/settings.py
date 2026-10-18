@@ -193,3 +193,11 @@ SITE_NAME = os.environ.get("SITE_NAME", "CITES Manager")
 
 # Import analysis (OCR) runs in a background thread so uploads return immediately
 IMPORT_BACKGROUND = os.environ.get("IMPORT_BACKGROUND", "1") == "1"
+
+# AI reading of imported documents via Regolo.ai (OpenAI-compatible, EU). Disabled without a key.
+REGOLO_API_KEY = os.environ.get("REGOLO_API_KEY", "")
+REGOLO_BASE_URL = os.environ.get("REGOLO_BASE_URL", "https://api.regolo.ai/v1")
+AI_OCR_MODEL = os.environ.get("AI_OCR_MODEL", "deepseek-ocr-2")
+AI_EXTRACT_MODEL = os.environ.get("AI_EXTRACT_MODEL", "qwen3.5-122b")
+AI_MAX_PAGES = int(os.environ.get("AI_MAX_PAGES", 30))
+AI_MIN_CONFIDENCE = float(os.environ.get("AI_MIN_CONFIDENCE", 0.75))  # below: ask the user

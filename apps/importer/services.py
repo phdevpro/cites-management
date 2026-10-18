@@ -20,7 +20,8 @@ from apps.vault.context import KeyRing, using
 from apps.vault.storage import read_plain
 
 from .extract import IMAGE_EXT, PDF_EXT, SHEET_EXT, extract
-from .models import ImportedFile, file_sha256
+from . import ai
+from .models import ImportBatch, ImportedFile, file_sha256
 from .parse import parse
 
 log = logging.getLogger(__name__)
@@ -84,13 +85,19 @@ def add_path(batch, root: Path) -> list[str]:
 STALE_AFTER = timedelta(minutes=10)
 
 
-def analyze_pending(batch_id: int) -> int:
+def analyze_pending(batch_id: int, user=None) -> int:
     """Analyze the batch's pending files one by one. Each file is claimed atomically, so several
-    workers (or a resumed run) never process the same file twice. Returns the number analyzed."""
+    workers (or a resumed run) never process the same file twice. When everything is read and the
+    AI is on, the documents are turned into records (autoapply). Returns the number analyzed."""
     done = 0
     while True:
         f = ImportedFile.objects.filter(batch_id=batch_id, status=ImportedFile.Status.PENDING).order_by("pk").first()
         if f is None:
+            busy = ImportedFile.objects.filter(batch_id=batch_id, status=ImportedFile.Status.PROCESSING).exists()
+            if ai.enabled() and user is not None and not busy:
+                from .autoapply import auto_apply_batch
+
+                auto_apply_batch(ImportBatch.objects.get(pk=batch_id), user)
             return done
         claimed = ImportedFile.objects.filter(pk=f.pk, status=ImportedFile.Status.PENDING).update(
             status=ImportedFile.Status.PROCESSING, updated_at=timezone.now())
@@ -108,18 +115,18 @@ def requeue_stale(batch_id: int) -> int:
     ).update(status=ImportedFile.Status.PENDING)
 
 
-def analyze_in_background(batch_id: int, ring) -> None:
+def analyze_in_background(batch_id: int, ring, user=None) -> None:
     """OCR can take minutes: run it outside the request. The thread gets a copy of the unlocked
     key ring (kept only in this process's memory) to read and write the encrypted files."""
     if not getattr(settings, "IMPORT_BACKGROUND", True):
-        analyze_pending(batch_id)
+        analyze_pending(batch_id, user)
         return
     keys = KeyRing(private_key=ring.private_key, keys=dict(ring.keys), keeper_keys=dict(ring.keeper_keys))
 
     def run():
         try:
             with using(keys):
-                analyze_pending(batch_id)
+                analyze_pending(batch_id, user)
         except Exception:
             log.exception("import analysis failed for batch %s", batch_id)
         finally:
@@ -149,6 +156,41 @@ def delete_batches(batches) -> int:
     return count
 
 
+AI_EXT = PDF_EXT | IMAGE_EXT
+AI_KIND = {"birth_declaration": "SCT1A", "death_declaration": "SCT5", "transfer_request": "SCT3",
+           "movement_certificate": "CERT", "office_reply": "REPLY", "payment_receipt": "PAYMENT",
+           "marking_record": "OTHER", "identity_document": "ID", "other": "OTHER"}
+
+
+def _analyze_locally(imported, plain: Path, known):
+    ex = extract(plain)
+    result = parse(imported.original_name, ex.text, ex.form_fields, known)
+    imported.text = ex.text[:50000]
+    imported.method = ex.method
+    imported.detected_kind = result.kind
+    imported.confidence = result.confidence
+    imported.parsed = result.as_dict()
+    imported.parsed["notes"] = ex.warnings + result.notes
+
+
+def _analyze_with_ai(imported, plain: Path):
+    from .extract import _acroform_values
+
+    form = _acroform_values(plain) if plain.suffix.lower() == ".pdf" else {}
+    form_text = "\n".join(f"{k}: {v}" for k, v in form.items())
+    res = ai.analyze_file(plain, imported.original_name, imported.original_path, form_text,
+                          keeper_name=imported.keeper.full_name)
+    docs = res.documents
+    main = next((d for d in docs if d["type"] not in ("identity_document", "other")), docs[0] if docs else None)
+    imported.text = res.text[:50000]
+    imported.method = "ai"
+    imported.detected_kind = AI_KIND.get(main["type"], "OTHER") if main else "OTHER"
+    imported.confidence = min((d["confidence"] for d in docs), default=0.0)
+    imported.parsed = {**res.as_dict(), "notes": list(res.warnings)}
+    if len(docs) > 1:
+        imported.parsed["notes"].append(f"Il file contiene {len(docs)} documenti distinti.")
+
+
 def analyze(imported: ImportedFile) -> ImportedFile:
     ext = Path(imported.original_name).suffix.lower()
     known = list(Species.objects.values_list("scientific_name", flat=True))
@@ -163,14 +205,15 @@ def analyze(imported: ImportedFile) -> ImportedFile:
             with tempfile.TemporaryDirectory() as tmp:
                 plain = Path(tmp) / f"doc{Path(imported.original_name).suffix.lower()}"
                 plain.write_bytes(read_plain(imported.file))
-                ex = extract(plain)
-            result = parse(imported.original_name, ex.text, ex.form_fields, known)
-            imported.text = ex.text[:50000]
-            imported.method = ex.method
-            imported.detected_kind = result.kind
-            imported.confidence = result.confidence
-            imported.parsed = result.as_dict()
-            imported.parsed["notes"] = ex.warnings + result.notes
+                if ai.enabled() and ext in AI_EXT:
+                    try:
+                        _analyze_with_ai(imported, plain)
+                    except Exception as exc:  # AI down / quota / bad answer: fall back to the local reader
+                        log.warning("AI analysis failed for import %s: %s", imported.pk, exc)
+                        _analyze_locally(imported, plain, known)
+                        imported.parsed["notes"].insert(0, f"Lettura AI non riuscita ({exc}); usata la lettura locale.")
+                else:
+                    _analyze_locally(imported, plain, known)
         imported.status = ImportedFile.Status.PARSED
         imported.error = ""
     except Exception as exc:  # keep the file, let the user enter data by hand

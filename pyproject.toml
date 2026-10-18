@@ -15,6 +15,7 @@ dependencies = [
     "django-htmx>=1.29.0",
     "django-simple-history>=3.13.0",
     "gunicorn>=26.2.0",
+    "openai>=3.35.1",
     "openpyxl>=3.1.5",
     "pdfplumber>=0.11.10",
     "psycopg[binary]>=3.3.6",

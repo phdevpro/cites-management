@@ -34,3 +34,28 @@ def absval(value):
         return abs(int(value))
     except (TypeError, ValueError):
         return value
+
+
+AI_DOC_LABELS = {
+    "birth_declaration": "Denuncia di nascita", "death_declaration": "Comunicazione di decesso",
+    "transfer_request": "Cessione / spostamento", "movement_certificate": "Certificato CITES",
+    "office_reply": "Risposta ufficio", "payment_receipt": "Ricevuta pagamento", "marking_record": "Marcatura",
+    "identity_document": "Documento d'identità", "other": "Altro",
+}
+AI_RESULT = {"created": ("success", "creato"), "linked": ("primary", "collegato"), "duplicate": ("secondary", "già presente"),
+             "archived": ("light", "archiviato"), "review": ("warning", "da verificare")}
+
+
+@register.filter
+def ai_doc_label(value):
+    return AI_DOC_LABELS.get(value, value)
+
+
+@register.filter
+def ai_result_color(result):
+    return AI_RESULT.get((result or {}).get("status"), ("warning", "da verificare"))[0]
+
+
+@register.filter
+def ai_result_label(result):
+    return AI_RESULT.get((result or {}).get("status"), ("warning", "da verificare"))[1]
