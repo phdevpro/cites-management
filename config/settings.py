@@ -34,7 +34,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.humanize",
-    "django_htmx",
     "simple_history",
     "apps.vault",
     "apps.accounts",
@@ -48,6 +47,9 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "config.security.AdminIPAllowlistMiddleware",
+    "config.security.PermissionsPolicyMiddleware",
+    "csp.middleware.CSPMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
@@ -56,7 +58,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "django_htmx.middleware.HtmxMiddleware",
     "simple_history.middleware.HistoryRequestMiddleware",
     "apps.vault.middleware.VaultActivateMiddleware",
     "apps.accounts.middleware.CurrentKeeperMiddleware",
@@ -201,3 +202,43 @@ AI_OCR_MODEL = os.environ.get("AI_OCR_MODEL", "deepseek-ocr-2")
 AI_EXTRACT_MODEL = os.environ.get("AI_EXTRACT_MODEL", "qwen3.5-122b")
 AI_MAX_PAGES = int(os.environ.get("AI_MAX_PAGES", 30))
 AI_MIN_CONFIDENCE = float(os.environ.get("AI_MIN_CONFIDENCE", 0.75))  # below: ask the user
+
+# --- Hardening ---------------------------------------------------------------
+# Admin lives at a configurable path and, when ADMIN_ALLOWED_IPS is set (comma-separated IPs/CIDRs),
+# answers 404 to everyone else. TRUSTED_PROXY_COUNT = proxies in front of the app that append to
+# X-Forwarded-For (1 = Traefik only, 2 = Cloudflare proxy + Traefik).
+ADMIN_URL = os.environ.get("ADMIN_URL", "admin/").strip("/") + "/"
+ADMIN_ALLOWED_IPS = [n for n in os.environ.get("ADMIN_ALLOWED_IPS", "").split(",") if n.strip()]
+TRUSTED_PROXY_COUNT = int(os.environ.get("TRUSTED_PROXY_COUNT", "0" if DEBUG else "1"))
+
+# Self-registration (set ALLOW_SIGNUP=0 for a private instance) and Cloudflare Turnstile on signup
+ALLOW_SIGNUP = os.environ.get("ALLOW_SIGNUP", "1") == "1"
+TURNSTILE_SITE_KEY = os.environ.get("TURNSTILE_SITE_KEY", "")
+TURNSTILE_SECRET_KEY = os.environ.get("TURNSTILE_SECRET_KEY", "")
+
+# Content-Security-Policy: no inline scripts anywhere (behaviour lives in static/app.js).
+# Inline style attributes are still used by templates, hence 'unsafe-inline' for styles only.
+_TURNSTILE = ["https://challenges.cloudflare.com"] if TURNSTILE_SITE_KEY else []
+_CSP = {
+    "DIRECTIVES": {
+        "default-src": ["'self'"],
+        "script-src": ["'self'", *_TURNSTILE],
+        "style-src": ["'self'", "'unsafe-inline'"],
+        "img-src": ["'self'", "data:", "blob:"],
+        "font-src": ["'self'"],
+        "connect-src": ["'self'"],
+        "frame-src": ["'self'", *_TURNSTILE],
+        "object-src": ["'none'"],
+        "base-uri": ["'self'"],
+        "form-action": ["'self'"],
+        "frame-ancestors": ["'self'"],
+    }
+}
+if os.environ.get("CSP_REPORT_ONLY", "0") == "1":
+    CONTENT_SECURITY_POLICY_REPORT_ONLY = _CSP
+else:
+    CONTENT_SECURITY_POLICY = _CSP
+
+SECURE_REFERRER_POLICY = "same-origin"
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
+SECURITY_CONTACT = os.environ.get("SECURITY_CONTACT", "")  # mailto:… or https://…; defaults to LEGAL_EMAIL

@@ -42,7 +42,7 @@
       <div class="d-flex flex-wrap gap-2">
         <button class="btn btn-sm btn-success">Salva e verifica</button>
         {% if ai_key_set %}<button class="btn btn-sm btn-outline-danger" name="remove" value="on"
-          onclick="return confirm('Rimuovere la chiave? Gli import useranno solo la lettura locale.')">Rimuovi</button>{% endif %}
+          data-confirm="Rimuovere la chiave? Gli import useranno solo la lettura locale.">Rimuovi</button>{% endif %}
       </div>
     </form>
   </div></div>
@@ -64,4 +64,4 @@
 {% endif %}
 </div>
 {% endblock %}
-{% block scripts %}{% include "_bootstrapify.html" %}{% endblock %}
+

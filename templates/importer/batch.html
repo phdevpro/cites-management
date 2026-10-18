@@ -4,7 +4,7 @@
 {% block content %}
 <h1 class="h4 mb-3">{{ batch }}</h1>
 {% if queue %}
-<div class="card mb-3"><div class="card-body">
+<div class="card mb-3" data-auto-refresh="4000"><div class="card-body">
   <div class="d-flex justify-content-between small mb-1">
     <span><span class="spinner-border spinner-border-sm text-success"></span> Analisi in corso (OCR delle scansioni: può richiedere alcuni minuti)…</span>
     <span>{{ total }} file, {{ queue }} in coda</span>
@@ -14,7 +14,7 @@
   <form method="post" class="mt-1">{% csrf_token %}<button name="resume" value="1" class="btn btn-sm btn-outline-secondary">Riprendi analisi</button></form>
 </div></div>
 {% endif %}
-<form class="mb-3"><select name="status" class="form-select w-auto" onchange="this.form.submit()"><option value="">Tutti</option>{% for v,l in statuses %}<option value="{{ v }}" {% if request.GET.status == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></form>
+<form class="mb-3"><select name="status" class="form-select w-auto" data-autosubmit><option value="">Tutti</option>{% for v,l in statuses %}<option value="{{ v }}" {% if request.GET.status == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></form>
 {% if ai_enabled and not queue and to_review and current_membership.can_edit %}
 <div class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center gap-2">
   <span><strong>{{ to_review }}</strong> file con documenti da verificare. Dopo aver aggiunto specie o esemplari mancanti puoi riprovare l'inserimento automatico.</span>
@@ -24,8 +24,8 @@
 <form method="post" action="{% url 'importer:delete_files' batch.pk %}" id="files-form">{% csrf_token %}
 {% if current_membership.can_edit %}
 <div class="d-flex flex-wrap gap-2 mb-2">
-  <button class="btn btn-sm btn-outline-danger" onclick="return confirmDelete('i file selezionati')"><i class="bi bi-trash"></i> Elimina selezionati</button>
-  <button class="btn btn-sm btn-danger" name="whole" value="1" onclick="return confirmDelete('l\'intero import ({{ total }} file)')"><i class="bi bi-trash"></i> Elimina tutto l'import</button>
+  <button class="btn btn-sm btn-outline-danger" data-require-selection data-confirm="Eliminare definitivamente i file selezionati? I file caricati e i dati estratti verranno cancellati."><i class="bi bi-trash"></i> Elimina selezionati</button>
+  <button class="btn btn-sm btn-danger" name="whole" value="1" data-confirm="Eliminare definitivamente l'intero import ({{ total }} file)?"><i class="bi bi-trash"></i> Elimina tutto l'import</button>
 </div>
 {% endif %}
 <div class="card"><div class="table-responsive"><table class="table table-sm table-hover mb-0">
@@ -45,12 +45,4 @@
 </form>
 <p class="small text-muted mt-2">Eliminare un import cancella i file caricati e i dati estratti. Denunce, documenti e pagamenti già registrati da questi file restano invariati.</p>
 {% endblock %}
-{% block scripts %}
-{% include "importer/_delete_js.html" %}
-{% if queue %}
-<script>
-// refresh progress every 4 s, but not while the user is selecting files to delete
-setInterval(() => { if (!document.querySelector('.row-check:checked')) location.reload(); }, 4000);
-</script>
-{% endif %}
-{% endblock %}
+

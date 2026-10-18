@@ -14,5 +14,6 @@ def legal(request):
     from apps.importer import ai
 
     keeper = getattr(request, "keeper", None)
-    return {"LEGAL": settings.LEGAL, "SITE_NAME": settings.SITE_NAME,
+    return {"LEGAL": settings.LEGAL, "SITE_NAME": settings.SITE_NAME, "ALLOW_SIGNUP": settings.ALLOW_SIGNUP,
+            "ADMIN_URL": "/" + settings.ADMIN_URL,
             "AI_PROVIDER": "Regolo.ai (Seeweb S.r.l.)" if ai.enabled(keeper) else ""}

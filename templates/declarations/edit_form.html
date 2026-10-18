@@ -5,7 +5,7 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
   <h1 class="h4 mb-0">{{ spec.title }}</h1>
   <div>
-    <button name="reset" value="1" class="btn btn-outline-warning" formnovalidate onclick="return confirm('Ricalcolare tutti i campi dai dati in archivio?')">Ricompila dai dati</button>
+    <button name="reset" value="1" class="btn btn-outline-warning" formnovalidate data-confirm="Ricalcolare tutti i campi dai dati in archivio?">Ricompila dai dati</button>
     <button class="btn btn-outline-success">Salva</button>
     <button name="generate" value="1" class="btn btn-success">Salva e genera PDF</button>
   </div>
@@ -55,4 +55,4 @@
 </div>
 </form>
 {% endblock %}
-{% block scripts %}{% include "_bootstrapify.html" %}{% endblock %}
+

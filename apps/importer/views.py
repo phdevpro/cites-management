@@ -166,8 +166,14 @@ def review(request, pk):
             return redirect("importer:review", pk=pk)
         if is_ai and "ignore_doc" in request.POST and doc_index is not None:
             _resolve_doc(f, doc_index, {"status": "archived", "message": "Ignorato dall'utente."})
-            return redirect("importer:review", pk=pk)
-        if form.is_valid():
+            messages.info(request, "Documento ignorato.")
+            return _after_review(f)
+        if not form.is_valid():
+            problems = "; ".join(
+                f"{form.fields[name].label if name in form.fields else 'Modulo'}: {' '.join(errs)}"
+                for name, errs in form.errors.items())
+            messages.error(request, f"Non registrato, controlla: {problems}")
+        else:
             try:
                 msg = services.apply(f, form.cleaned_data, request.user)
             except Exception as exc:
@@ -177,10 +183,7 @@ def review(request, pk):
                 if is_ai and doc_index is not None:
                     _resolve_doc(ImportedFile.objects.get(pk=f.pk), doc_index,
                                  {"status": "created", "message": f"Registrato manualmente: {msg}"})
-                    if _open_doc_index(ImportedFile.objects.get(pk=f.pk)) is not None:
-                        return redirect("importer:review", pk=pk)
-                nxt = (ImportedFile.objects.filter(batch=f.batch, status="parsed").exclude(pk=f.pk).first())
-                return redirect("importer:review", pk=nxt.pk) if nxt else redirect("importer:batch", pk=f.batch_id)
+                return _after_review(f)
     d = (f.parsed or {}).get("data", {})
     if is_ai and doc_index is not None and doc_index < len(f.parsed.get("documents", [])):
         d = _ai_as_legacy(f.parsed["documents"][doc_index])
@@ -202,6 +205,22 @@ def review(request, pk):
         "prev_pk": siblings[idx - 1] if idx > 0 else None,
         "next_pk": siblings[idx + 1] if idx + 1 < len(siblings) else None,
     })
+
+
+def _after_review(f: ImportedFile):
+    """Go on: next open document of the same file, else the next file still to review AFTER this one
+    (wrapping around), else back to the import page."""
+    f = ImportedFile.objects.get(pk=f.pk)
+    if (f.parsed or {}).get("ai") and _open_doc_index(f) is not None:
+        return redirect("importer:review", pk=f.pk)
+    todo = list(ImportedFile.objects.filter(batch=f.batch_id, status=ImportedFile.Status.PARSED)
+                .exclude(pk=f.pk).values_list("pk", flat=True))
+    if not todo:
+        return redirect("importer:batch", pk=f.batch_id)
+    order = list(ImportedFile.objects.filter(batch=f.batch_id).values_list("pk", flat=True))
+    pos = order.index(f.pk)
+    following = [pk for pk in order[pos + 1:] + order[:pos] if pk in todo]
+    return redirect("importer:review", pk=following[0])
 
 
 def _resolve_doc(f: ImportedFile, index: int, result: dict):

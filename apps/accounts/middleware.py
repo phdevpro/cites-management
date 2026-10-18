@@ -32,7 +32,8 @@ class CurrentKeeperMiddleware:
         return self.get_response(request)
 
 
-TERMS_EXEMPT = ("/login/", "/logout/", "/termini/", "/privacy/", "/account/termini/", "/static/", "/favicon.ico")
+TERMS_EXEMPT = ("/login/", "/logout/", "/termini/", "/privacy/", "/account/termini/", "/static/", "/favicon.ico",
+                "/.well-known/")
 
 
 class TermsAcceptanceMiddleware:

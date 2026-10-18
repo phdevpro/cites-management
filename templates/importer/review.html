@@ -67,7 +67,7 @@
     <div data-for="birth death">{% include "_field.html" with field=form.protocol_number %}{% include "_field.html" with field=form.protocol_date %}</div>
     <div data-for="document">{% include "_field.html" with field=form.doc_type %}{% include "_field.html" with field=form.number %}{% include "_field.html" with field=form.issued_on %}{% include "_field.html" with field=form.specimens %}</div>
     <div data-for="document payment archive">{% include "_field.html" with field=form.link_declaration %}
-      {% if candidates %}<p class="small text-muted">Possibili pratiche: {% for c in candidates %}<a href="#" onclick="document.getElementById('id_link_declaration').value='{{ c.pk }}';return false">{{ c }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+      {% if candidates %}<p class="small text-muted">Possibili pratiche: {% for c in candidates %}<a href="#" data-fill-target="id_link_declaration" data-fill-value="{{ c.pk }}">{{ c }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}
     </div>
     <div data-for="payment">{% include "_field.html" with field=form.fee_type %}{% include "_field.html" with field=form.amount %}{% include "_field.html" with field=form.paid_on %}</div>
     <div data-for="death document payment">{% include "_field.html" with field=form.notes %}</div>
@@ -82,11 +82,4 @@
 </div>
 </div>
 {% endblock %}
-{% block scripts %}
-{% include "_bootstrapify.html" %}
-<script>
-const sel = document.getElementById('id_action');
-function sync() { document.querySelectorAll('[data-for]').forEach(el => el.style.display = el.dataset.for.split(' ').includes(sel.value) ? '' : 'none'); }
-sel.addEventListener('change', sync); sync();
-</script>
-{% endblock %}
+

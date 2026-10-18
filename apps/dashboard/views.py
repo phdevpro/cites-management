@@ -28,3 +28,22 @@ def terms_page(request):
 
 def privacy_page(request):
     return render(request, "legal/privacy.html")
+
+
+def security_txt(request):
+    """RFC 9116 security.txt; contact from SECURITY_CONTACT or LEGAL_EMAIL."""
+    from datetime import timedelta
+
+    from django.conf import settings
+    from django.http import Http404, HttpResponse
+    from django.utils import timezone
+
+    contact = settings.SECURITY_CONTACT or settings.LEGAL.get("email", "")
+    if not contact:
+        raise Http404
+    if "@" in contact and not contact.startswith("mailto:"):
+        contact = f"mailto:{contact}"
+    expires = (timezone.now() + timedelta(days=365)).replace(microsecond=0).isoformat()
+    body = (f"Contact: {contact}\nExpires: {expires}\nPreferred-Languages: it, en\n"
+            f"Canonical: {request.build_absolute_uri()}\n")
+    return HttpResponse(body, content_type="text/plain; charset=utf-8")

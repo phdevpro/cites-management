@@ -14,8 +14,9 @@ def needs_acceptance(user) -> bool:
 
 
 def client_ip(request) -> str:
-    forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
-    return (forwarded.split(",")[0].strip() if forwarded else request.META.get("REMOTE_ADDR", ""))[:45]
+    from config.security import client_ip as real_ip
+
+    return real_ip(request)
 
 
 def record(user, request=None) -> TermsAcceptance:

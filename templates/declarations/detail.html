@@ -78,11 +78,11 @@
   </div></div>
   {% endif %}
   {% if decl.status == "draft" %}
-  <form method="post" action="{% url 'declarations:delete' decl.pk %}" onsubmit="return confirm('Eliminare la bozza?')">{% csrf_token %}<button class="btn btn-link text-danger p-0">Elimina bozza</button></form>
+  <form method="post" action="{% url 'declarations:delete' decl.pk %}" data-confirm="Eliminare la bozza?">{% csrf_token %}<button class="btn btn-link text-danger p-0">Elimina bozza</button></form>
   {% endif %}
   {% endif %}
   {% if imported_files %}<div class="card mt-3"><div class="card-body"><h2 class="h6">Origine import</h2>{% for f in imported_files %}<a href="{% url 'importer:review' f.pk %}">{{ f.original_path }}</a><br>{% endfor %}</div></div>{% endif %}
 </div>
 </div>
 {% endblock %}
-{% block scripts %}{% include "_bootstrapify.html" %}{% endblock %}
+

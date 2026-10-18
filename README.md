@@ -158,6 +158,21 @@ uv run pytest
   verificati con l'ufficio competente.
 - La cartella `CITES Denuncia Tartarughe/` e `media/` contengono documenti personali e sono escluse da git.
 
+## Sicurezza
+
+- **Nessuno script esterno**: Bootstrap e icone sono serviti dall'app (`static/vendor`, verificati con l'hash
+  d'integrità del registro npm); tutto il JavaScript è in `static/app.js`.
+- **Content-Security-Policy** applicata (`script-src 'self'`, niente script inline, `object-src 'none'`,
+  `frame-ancestors 'self'`); `CSP_REPORT_ONLY=1` per passare in sola segnalazione. **Permissions-Policy** nega
+  fotocamera, microfono, geolocalizzazione, pagamenti, USB, ecc.
+- **Registrazione**: `ALLOW_SIGNUP=0` la disattiva; con `TURNSTILE_SITE_KEY`/`TURNSTILE_SECRET_KEY` richiede
+  Cloudflare Turnstile.
+- **Admin**: percorso configurabile (`ADMIN_URL`) e allowlist IP (`ADMIN_ALLOWED_IPS`); l'IP reale è letto da
+  `X-Forwarded-For` contando solo i proxy fidati (`TRUSTED_PROXY_COUNT`), quindi non è falsificabile dal client.
+  Anche l'admin richiede lo sblocco con la passphrase di cifratura. Consigliata anche una regola WAF Cloudflare
+  sul percorso dell'admin.
+- **`/.well-known/security.txt`** (RFC 9116) con contatto da `SECURITY_CONTACT` o `LEGAL_EMAIL`.
+
 ## Licenza
 
 Progetto personale open source, senza scopo di lucro, rilasciato con licenza [MIT](LICENSE).

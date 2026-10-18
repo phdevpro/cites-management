@@ -172,3 +172,21 @@ def test_analysis_does_not_resurrect_deleted_file(keeper):
     ImportedFile.objects.filter(pk=f.pk).delete()
     services.analyze(stale)
     assert not ImportedFile.objects.filter(pk=f.pk).exists()
+
+
+@pytest.mark.django_db
+def test_review_moves_to_next_file_and_reports_errors(client_logged, keeper):
+    from django.core.files.base import ContentFile
+
+    batch = ImportBatch.objects.create(keeper=keeper)
+    a, b, c = (services.add_file(batch, ContentFile(_birth_pdf(n), name=f"{n}.pdf"), f"{n}.pdf")[0] for n in (1, 2, 3))
+    assert {f.status for f in (a, b, c)} == {"parsed"}
+
+    # invalid submission: stays, and says why
+    resp = client_logged.post(f"/importa/file/{b.pk}/", {"action": "document"}, follow=True)
+    assert resp.redirect_chain == [] and "Non registrato, controlla" in resp.content.decode()
+
+    skip = {"action": "skip"}
+    assert client_logged.post(f"/importa/file/{b.pk}/", skip).url == f"/importa/file/{c.pk}/"  # next, not first
+    assert client_logged.post(f"/importa/file/{c.pk}/", skip).url == f"/importa/file/{a.pk}/"  # wraps around
+    assert client_logged.post(f"/importa/file/{a.pk}/", skip).url == f"/importa/lotto/{batch.pk}/"  # all done

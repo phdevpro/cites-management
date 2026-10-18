@@ -256,7 +256,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "cryptography" },
     { name = "django" },
-    { name = "django-htmx" },
+    { name = "django-csp" },
     { name = "django-simple-history" },
     { name = "gunicorn" },
     { name = "openai" },
@@ -280,7 +280,7 @@ dev = [
 requires-dist = [
     { name = "cryptography", specifier = ">=50.0.2" },
     { name = "django", specifier = ">=5.1,<6" },
-    { name = "django-htmx", specifier = ">=1.29.0" },
+    { name = "django-csp", specifier = ">=4.0" },
     { name = "django-simple-history", specifier = ">=3.13.0" },
     { name = "gunicorn", specifier = ">=26.2.0" },
     { name = "openai", specifier = ">=3.35.1" },
@@ -387,16 +387,16 @@ wheels = [
 ]
 
 [[package]]
-name = "django-htmx"
-version = "1.29.0"
+name = "django-csp"
+version = "4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "asgiref" },
     { name = "django" },
+    { name = "packaging" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/66/cc/b0619004ed73a4a2bfa50d14b00a8228407b01994df73613584523ab3056/django_htmx-1.29.0.tar.gz", hash = "sha256:337dfa35b8da13fd68bf968f2b9cc9a4144a4e71f06c204d7ff10f7343988102", size = 204340, upload-time = "2026-08-05T23:42:09.457Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/52/db/23567744dff2169aadb095f726088074476b24dfff5a759ffcf6389cf401/django_csp-4.0.tar.gz", hash = "sha256:b27010bb702eb20a3dad329178df2b61a2b82d338b70fbdc13c3a3bd28712833", size = 20028, upload-time = "2025-04-02T16:41:46.721Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ec/72/1f5f35d719b355e5c051378ae4859586f59c9db08708f02fea358376c130/django_htmx-1.29.0-py3-none-any.whl", hash = "sha256:0ec5be1645ed71e6787bd75e0250624f00274ac3bb1730f07b6629a95688929b", size = 224954, upload-time = "2026-08-05T23:42:08.142Z" },
+    { url = "https://files.pythonhosted.org/packages/e1/a4/736ab90ee527a23e194d1ce7358c6bcced66381ced83c28268b4aea236f7/django_csp-4.0-py3-none-any.whl", hash = "sha256:d5a0a05463a6b75a4f1fc1828c58c89af8db9364d09fc6e12f122b4d7f3d00dc", size = 25689, upload-time = "2025-04-02T16:41:45.689Z" },
 ]
 
 [[package]]

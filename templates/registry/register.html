@@ -10,8 +10,8 @@
 </div>
 {% if not current_keeper.sells_specimens %}<div class="alert alert-info small">Il registro è obbligatorio per chi cede, vende o scambia esemplari (D.M. 8/1/2002). Le registrazioni vengono comunque tenute automaticamente come storico.</div>{% endif %}
 <form class="row g-2 mb-3">
-  <div class="col-auto"><select name="type" class="form-select" onchange="this.form.submit()">{% for v,l in types %}<option value="{{ v }}" {% if register_type == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
-  <div class="col-auto"><select name="year" class="form-select" onchange="this.form.submit()"><option value="">Tutti gli anni</option>{% for y in years %}<option {% if request.GET.year == y.year|stringformat:"s" %}selected{% endif %}>{{ y.year }}</option>{% endfor %}</select></div>
+  <div class="col-auto"><select name="type" class="form-select" data-autosubmit>{% for v,l in types %}<option value="{{ v }}" {% if register_type == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+  <div class="col-auto"><select name="year" class="form-select" data-autosubmit><option value="">Tutti gli anni</option>{% for y in years %}<option {% if request.GET.year == y.year|stringformat:"s" %}selected{% endif %}>{{ y.year }}</option>{% endfor %}</select></div>
 </form>
 <div class="card"><div class="table-responsive"><table class="table table-sm mb-0">
 <thead><tr><th>N.</th><th>Registrato</th><th>Evento</th><th>Mov.</th><th>Causale</th><th>Specie</th><th>Q.tà</th><th>Marcatura</th><th>Documento</th><th>Prov./Dest.</th><th>Rif.</th><th></th></tr></thead>

@@ -8,24 +8,12 @@
   <h2 class="h6 mt-2">Nati</h2>
   {{ formset.management_form }}
   {% for e in formset.non_form_errors %}<div class="alert alert-danger">{{ e }}</div>{% endfor %}
-  <table class="table table-sm" id="rows"><thead><tr><th>N.</th><th>Sesso</th><th>Nome</th><th>Marcatura</th><th>Estremi</th></tr></thead><tbody>
+  <table class="table table-sm" id="rows"><thead><tr><th>N.</th><th>Sesso</th><th>Nome</th><th>Marcatura</th><th>Estremi</th></tr></thead><tbody id="rows-body">
   {% for f in formset %}<tr>{% for field in f.visible_fields %}<td>{{ field }}{% for e in field.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</td>{% endfor %}{% for e in f.non_field_errors %}<td class="text-danger small">{{ e }}</td>{% endfor %}</tr>{% endfor %}
   </tbody></table>
-  <template id="row-tpl"><tr>{% for field in formset.empty_form.visible_fields %}<td>{{ field }}</td>{% endfor %}</tr></template>
-  <button type="button" class="btn btn-sm btn-outline-secondary mb-3" id="add-row">+ Aggiungi riga (esemplare marcato singolarmente)</button><br>
+  <template id="rows-tpl"><tr>{% for field in formset.empty_form.visible_fields %}<td>{{ field }}</td>{% endfor %}</tr></template>
+  <button type="button" class="btn btn-sm btn-outline-secondary mb-3" data-formset-add="rows">+ Aggiungi riga (esemplare marcato singolarmente)</button><br>
   <button class="btn btn-success">Registra nascita e prepara denuncia</button>
 </form></div></div>
 {% endblock %}
-{% block scripts %}
-{% include "_bootstrapify.html" %}
-<script>
-document.getElementById('add-row').onclick = () => {
-  const total = document.getElementById('id_rows-TOTAL_FORMS');
-  const html = document.getElementById('row-tpl').innerHTML.replace(/__prefix__/g, total.value);
-  document.querySelector('#rows tbody').insertAdjacentHTML('beforeend', html);
-  total.value = +total.value + 1;
-  document.querySelectorAll('#rows input:not(.form-control)').forEach(e => e.classList.add('form-control', 'form-control-sm'));
-  document.querySelectorAll('#rows select:not(.form-select)').forEach(e => e.classList.add('form-select', 'form-select-sm'));
-};
-</script>
-{% endblock %}
+

@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
@@ -17,15 +18,44 @@ from .middleware import SESSION_KEY
 from .models import DetentionSite, Membership
 
 
+TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+
+
+def turnstile_ok(request) -> bool:
+    """Server-side check of the Cloudflare Turnstile token (skipped when Turnstile is not configured)."""
+    if not settings.TURNSTILE_SECRET_KEY:
+        return True
+    token = request.POST.get("cf-turnstile-response", "")
+    if not token:
+        return False
+    import json
+    import urllib.parse
+    import urllib.request
+
+    body = urllib.parse.urlencode({"secret": settings.TURNSTILE_SECRET_KEY, "response": token,
+                                   "remoteip": terms.client_ip(request)}).encode()
+    try:
+        with urllib.request.urlopen(TURNSTILE_VERIFY_URL, data=body, timeout=10) as resp:
+            return bool(json.loads(resp.read()).get("success"))
+    except (OSError, ValueError):
+        return False
+
+
 def signup(request):
+    if not settings.ALLOW_SIGNUP:
+        raise Http404("Registrazione disattivata")
     form = SignupForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        user = form.save()
-        terms.record(user, request)
-        login(request, user)
-        messages.success(request, "Account creato. Inserisci ora i dati del detentore.")
-        return redirect("accounts:keeper_create")
-    return render(request, "registration/signup.html", {"form": form})
+        if not turnstile_ok(request):
+            form.add_error(None, "Verifica anti-bot non superata: riprova.")
+        else:
+            user = form.save()
+            terms.record(user, request)
+            login(request, user)
+            messages.success(request, "Account creato. Inserisci ora i dati del detentore.")
+            return redirect("accounts:keeper_create")
+    return render(request, "registration/signup.html", {"form": form,
+                                                        "turnstile_site_key": settings.TURNSTILE_SITE_KEY})
 
 
 @login_required

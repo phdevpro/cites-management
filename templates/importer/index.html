@@ -5,7 +5,7 @@
 <div class="col-lg-7">
   <div class="card mb-4"><div class="card-body">
     <p class="small text-muted">Carica i PDF delle denunce già presentate (SCT1/A, SCT1/B, SCT5, SCT3), le risposte dell'ufficio (es. <code>DC_1234 (10.100-1) DN n. 9 Testudo hermanni.pdf</code>), certificati, ricevute e scansioni. L'app riconosce il tipo, estrae i dati (campi modulo, testo o OCR) e ti propone cosa registrare: verifichi ogni file prima che entri in archivio.</p>
-    <form method="post" enctype="multipart/form-data" id="upload-form">{% csrf_token %}
+    <form method="post" enctype="multipart/form-data" id="upload-form" data-busy-text="Caricamento e cifratura dei file…">{% csrf_token %}
       {% include "_form.html" %}
       <button class="btn btn-success" id="upload-btn">Carica e analizza</button>
     </form>
@@ -28,22 +28,12 @@
       {% for b in batches %}<li class="list-group-item"><input type="checkbox" class="form-check-input me-2 row-check" name="ids" value="{{ b.pk }}"> <a href="{% url 'importer:batch' b.pk %}">{{ b }}</a> <small class="text-muted">{{ b.files.count }} file · {{ b.created_at|date:"d/m/Y H:i" }}</small></li>{% endfor %}
     </ul>
     {% if current_membership.can_edit %}
-    <button class="btn btn-sm btn-outline-danger" onclick="return confirmDelete('gli import selezionati')"><i class="bi bi-trash"></i> Elimina selezionati</button>
-    <button class="btn btn-sm btn-danger" name="all" value="1" onclick="return confirmDelete('TUTTI gli import ({{ batches|length }})')"><i class="bi bi-trash"></i> Elimina tutti</button>
+    <button class="btn btn-sm btn-outline-danger" data-require-selection data-confirm="Eliminare definitivamente gli import selezionati? I file caricati e i dati estratti verranno cancellati."><i class="bi bi-trash"></i> Elimina selezionati</button>
+    <button class="btn btn-sm btn-danger" name="all" value="1" data-confirm="Eliminare definitivamente TUTTI gli import ({{ batches|length }})? I file caricati e i dati estratti verranno cancellati."><i class="bi bi-trash"></i> Elimina tutti</button>
     {% endif %}
   </form>
   {% else %}<p class="text-muted mb-0">Nessuna importazione.</p>{% endif %}
 </div></div></div>
 </div>
 {% endblock %}
-{% block scripts %}
-{% include "_bootstrapify.html" %}
-{% include "importer/_delete_js.html" %}
-<script>
-document.getElementById('upload-form').addEventListener('submit', () => {
-  const btn = document.getElementById('upload-btn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Caricamento e cifratura dei file…';
-});
-</script>
-{% endblock %}
+
