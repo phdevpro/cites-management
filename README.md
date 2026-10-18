@@ -28,6 +28,9 @@ precedenti, scadenze e registro di carico/scarico.
   Le pagine dei documenti d'identità sono riconosciute in locale e non vengono mai inviate.
   Verifica dal pulsante *Salva e verifica* nel profilo (o, per la chiave del server, `manage.py ai_check`).
 - **Registro di carico e scarico** (D.M. 8/1/2002) automatico e immodificabile (solo rettifiche), export PDF/XLSX.
+- **Eliminazione delle pratiche** (anche in blocco) con annullamento degli effetti: gli esemplari di una nascita
+  vengono rimossi, quelli di decessi/cessioni tornano in carico, il registro riceve le rettifiche; bloccata se
+  esistono pratiche successive che ne dipendono.
 - **Scadenze**: denuncia nascita 10 gg, estremi marcatura 45 gg, microchip Testudo entro 1 anno, risposte mancanti,
   documento d'identità in scadenza, specie passate in All. A (90 gg). Promemoria email: `manage.py send_reminders`.
 - **Multi-utente / multi-detentore** con ruoli (titolare, collaboratore, sola lettura).
@@ -171,6 +174,9 @@ uv run pytest
   `X-Forwarded-For` contando solo i proxy fidati (`TRUSTED_PROXY_COUNT`), quindi non è falsificabile dal client.
   Anche l'admin richiede lo sblocco con la passphrase di cifratura. Consigliata anche una regola WAF Cloudflare
   sul percorso dell'admin.
+- **Autenticazione a due fattori (TOTP)** obbligatoria per gli amministratori (`OTP_REQUIRED_FOR=staff`, oppure
+  `all` per tutti): QR code per l'app di autenticazione, 10 codici di backup monouso, protezione dai tentativi
+  ripetuti. Telefono perso: `docker exec cites_web python manage.py reset_2fa <utente>`.
 - **`/.well-known/security.txt`** (RFC 9116) con contatto da `SECURITY_CONTACT` o `LEGAL_EMAIL`.
 
 ## Licenza

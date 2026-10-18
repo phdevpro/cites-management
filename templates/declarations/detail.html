@@ -78,9 +78,9 @@
     </form>
   </div></div>
   {% endif %}
-  {% if decl.status == "draft" %}
-  <form method="post" action="{% url 'declarations:delete' decl.pk %}" data-confirm="Eliminare la bozza?">{% csrf_token %}<button class="btn btn-link text-danger p-0">Elimina bozza</button></form>
-  {% endif %}
+  <form method="post" action="{% url 'declarations:delete' decl.pk %}" class="mt-2"
+        data-confirm="Eliminare questa pratica? Verranno annullati anche i suoi effetti: esemplari creati (nascite) o riportati in carico (decessi, cessioni), protocolli e allegati; nel registro di carico/scarico verranno aggiunte le rettifiche.">{% csrf_token %}
+    <button class="btn btn-link text-danger p-0"><i class="bi bi-trash"></i> Elimina pratica</button></form>
   {% endif %}
   {% if imported_files %}<div class="card mt-3"><div class="card-body"><h2 class="h6">Origine import</h2>{% for f in imported_files %}<a href="{% url 'importer:review' f.pk %}">{{ f.original_path }}</a><br>{% endfor %}</div></div>{% endif %}
 </div>

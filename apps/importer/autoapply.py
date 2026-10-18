@@ -56,7 +56,8 @@ class Applier:
         return Species.objects.filter(scientific_name__iexact=name).first() if name else None
 
     def attach(self, declaration, f, kind=Attachment.Kind.ORIGINAL):
-        if declaration.attachments.filter(description=f.original_name, kind=kind).exists():
+        # descriptions are encrypted in the DB: compare after decryption
+        if any(a.description == f.original_name for a in declaration.attachments.filter(kind=kind)):
             return
         from .services import _attach
 

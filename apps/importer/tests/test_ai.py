@@ -287,3 +287,23 @@ def test_clean_drops_identity_data_and_bad_values():
                      "microchips": ["380 260 000 000 001", "123"], "event_date": "18/10/2024", "quantity": "x"})
     assert out["counterparty_name"] == "" and out["confidence"] == 1.0
     assert out["microchips"] == ["380260000000001"] and out["event_date"] == "" and out["quantity"] == 0
+
+
+
+@pytest.mark.django_db
+def test_reapply_does_not_duplicate_attachments(client_logged, keeper, hermanni, regolo):
+    from apps.importer.autoapply import auto_apply_batch
+
+    birth_pdf = render_pdf("SCT1A", {"fields": {"place_date": "Udine 26/10/2024"},
+                                     "rows": [{"scientific_name": "n9 - TESTUDO HERMANNI", "birth_date": "18/10/2024"}]},
+                           flatten=True)
+    _upload(client_logged, {"2024/nascita_2024.pdf": birth_pdf})
+    batch = ImportBatch.objects.get()
+    decl = Declaration.objects.get(kind="SCT1A")
+    assert decl.attachments.count() == 1
+    f = batch.files.get()
+    f.parsed["documents"][0]["result"] = {"status": "review"}  # force a second pass on the same document
+    f.status = "parsed"
+    f.save()
+    auto_apply_batch(batch, keeper.memberships.first().user)
+    assert decl.attachments.count() == 1 and Declaration.objects.filter(kind="SCT1A").count() == 1

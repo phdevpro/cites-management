@@ -417,15 +417,33 @@ def add_attachment(request, pk):
 
 @require_POST
 def delete(request, pk):
-    """Only drafts can be deleted; registry changes are reverted by hand (register is append-only)."""
+    """Delete a declaration and undo its effects on the registry (see services.delete_declaration)."""
     _guard(request)
     decl = _get(request, pk)
-    if decl.status != Declaration.Status.DRAFT:
-        messages.error(request, "Si possono eliminare solo le bozze.")
+    try:
+        messages.success(request, services.delete_declaration(decl, request.user))
+    except services.ServiceError as exc:
+        messages.error(request, str(exc))
         return redirect(decl)
-    decl.items.all().delete()
-    decl.delete()
-    messages.warning(request, "Bozza eliminata. Eventuali registrazioni di carico/scarico vanno rettificate.")
+    return redirect("declarations:list")
+
+
+@require_POST
+def delete_many(request):
+    """Bulk delete from the list. Newest first, so later events are removed before what they depend on."""
+    _guard(request)
+    ids = [int(x) for x in request.POST.getlist("ids") if x.isdigit()]
+    done, errors = 0, []
+    for decl in Declaration.objects.filter(keeper=request.keeper, pk__in=ids).order_by("-event_date", "-pk"):
+        try:
+            services.delete_declaration(decl, request.user)
+            done += 1
+        except services.ServiceError as exc:
+            errors.append(f"{decl.get_kind_display()} del {decl.event_date:%d/%m/%Y}: {exc}")
+    if done:
+        messages.success(request, f"Eliminate {done} pratiche.")
+    for e in errors:
+        messages.error(request, e)
     return redirect("declarations:list")
 
 

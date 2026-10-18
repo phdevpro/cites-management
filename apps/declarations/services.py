@@ -353,3 +353,131 @@ def mark_protocolled(declaration: Declaration, number: str, on: date | None, cre
                     item.document.save(update_fields=["returned_on"])
         return doc
     return None
+
+
+# --------------------------------------------------------------------------- deletion
+
+def _reverse_register(entries, user, reason: str):
+    """The register is append-only: cancel entries with opposite 'rettifica' entries."""
+    for e in entries:
+        if e.cause == RegisterEntry.Cause.CORRECTION or e.corrections.exists():
+            continue
+        RegisterEntry.objects.create(
+            keeper=e.keeper, register_type=e.register_type,
+            direction=RegisterEntry.Direction.OUT if e.direction == RegisterEntry.Direction.IN
+            else RegisterEntry.Direction.IN,
+            cause=RegisterEntry.Cause.CORRECTION, event_date=e.event_date, species=e.species, specimen=e.specimen,
+            quantity=e.quantity, description=e.description, marking=e.marking, document=e.document,
+            counterparty=e.counterparty, corrects=e, notes=f"Rettifica reg. n. {e.number}: {reason}"[:255],
+            created_by=user,
+        )
+
+
+def _family(specimens):
+    """Specimens plus every part split from them (recursively)."""
+    out, todo = {}, list(specimens)
+    while todo:
+        sp = todo.pop()
+        if sp.pk in out:
+            continue
+        out[sp.pk] = sp
+        todo.extend(sp.splits.all())
+    return list(out.values())
+
+
+def _other_declarations(specimens, declaration):
+    from .models import DeclarationItem
+
+    return {i.declaration for i in DeclarationItem.objects.filter(specimen__in=specimens)
+            .exclude(declaration=declaration).select_related("declaration")}
+
+
+@transaction.atomic
+def delete_declaration(declaration, user) -> str:
+    """Delete a declaration of any status and undo what it did to the registry:
+    births remove the animals they created, deaths / losses / transfers bring the animals back,
+    register entries are cancelled with 'rettifica' entries, protocols created for it are removed.
+    Refuses (ServiceError) when later events depend on it."""
+    from django.db.models import Q
+
+    from apps.importer.models import ImportedFile
+
+    from .models import Declaration as D
+
+    reason = f"eliminata pratica {declaration.get_kind_display()} del {declaration.event_date:%d/%m/%Y}"
+    items = list(declaration.items.select_related("specimen"))
+    specimens = [i.specimen for i in items]
+    summary = []
+
+    protocol = declaration.protocol_number
+    if protocol:  # numbers are encrypted in the DB: compare after decryption
+        candidates = CitesDocument.objects.filter(
+            keeper=declaration.keeper, specimens__in=specimens,
+            doc_type__in=[CitesDocument.DocType.BIRTH_PROTOCOL, CitesDocument.DocType.DEATH_PROTOCOL,
+                          CitesDocument.DocType.CERT_MOVE],
+        ).distinct()
+        for doc in [d for d in candidates if d.number == protocol]:
+            if doc.file and doc.file.name:
+                transaction.on_commit(lambda s=doc.file.storage, n=doc.file.name: s.delete(n))
+            doc.delete()
+
+    if declaration.kind in (D.Kind.BIRTH_A, D.Kind.BIRTH_B):
+        family = _family(specimens)
+        later = _other_declarations(family, declaration)
+        changed = [s for s in family if not s.is_alive]
+        if later or changed:
+            names = ", ".join(sorted({f"{d.get_kind_display()} del {d.event_date:%d/%m/%Y}" for d in later}))
+            raise ServiceError("Gli esemplari di questa nascita hanno eventi successivi"
+                               + (f" ({names})" if names else " (decessi, cessioni)")
+                               + ": elimina prima quelle pratiche.")
+        _reverse_register(RegisterEntry.objects.filter(specimen__in=family), user, reason)
+        declaration.items.all().delete()
+        n = sum(s.quantity for s in family)
+        Specimen.objects.filter(pk__in=[s.pk for s in family]).delete()
+        summary.append(f"rimossi {n} esemplari nati")
+
+    elif declaration.kind in (D.Kind.DEATH, D.Kind.LOSS, D.Kind.TRANSFER, D.Kind.SALE_B):
+        later = {d for d in _other_declarations(specimens, declaration)
+                 if d.event_date >= declaration.event_date and d.kind not in (D.Kind.BIRTH_A, D.Kind.BIRTH_B)}
+        if later:
+            names = ", ".join(sorted(f"{d.get_kind_display()} del {d.event_date:%d/%m/%Y}" for d in later))
+            raise ServiceError(f"Gli stessi esemplari compaiono in pratiche successive ({names}): elimina prima quelle.")
+        _reverse_register(RegisterEntry.objects.filter(specimen__in=specimens, direction=RegisterEntry.Direction.OUT)
+                          .filter(Q(event_date__gte=declaration.event_date)), user, reason)
+        declaration.items.all().delete()
+        restored = 0
+        for sp in specimens:
+            sp.refresh_from_db()
+            sp.status, sp.status_date, sp.cause_of_death, sp.transferred_to = Specimen.Status.ALIVE, None, "", None
+            sp.save()
+            restored += sp.quantity
+            parent = sp.split_from
+            # rejoin the lot it was split from, unless the part has its own identity (marking, other events)
+            if parent and parent.is_alive and not sp.markings.exists() and not sp.declaration_items.exists():
+                parent.quantity += sp.quantity
+                parent.save(update_fields=["quantity"])
+                sp.delete()
+        summary.append(f"{restored} esemplari tornati in carico")
+    else:
+        declaration.items.all().delete()
+
+    for f in ImportedFile.objects.filter(declaration=declaration):
+        docs = (f.parsed or {}).get("documents", [])
+        for d in docs:
+            if (d.get("result") or {}).get("declaration") == declaration.pk:
+                d["result"] = {"status": "review", "message": "Pratica eliminata: da registrare di nuovo."}
+        if docs:
+            from apps.importer.autoapply import file_status
+
+            f.status = file_status(f.parsed)
+        else:
+            f.status = ImportedFile.Status.PARSED
+        f.declaration = None
+        f.save(update_fields=["parsed", "status", "declaration", "updated_at"])
+
+    files = [declaration.pdf] + [a.file for a in declaration.attachments.all()]
+    for ff in files:
+        if ff and ff.name:
+            transaction.on_commit(lambda s=ff.storage, n=ff.name: s.delete(n))
+    declaration.delete()
+    return "Pratica eliminata" + (f": {', '.join(summary)}" if summary else "") + "."

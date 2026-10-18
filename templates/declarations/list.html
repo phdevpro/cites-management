@@ -7,16 +7,22 @@
   <div class="col-md-3"><select name="status" class="form-select" data-autosubmit><option value="">Tutti gli stati</option>{% for v,l in statuses %}<option value="{{ v }}" {% if request.GET.status == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
   <div class="col-md-2"><select name="year" class="form-select" data-autosubmit><option value="">Anno</option>{% for y in years %}<option {% if request.GET.year == y.year|stringformat:"s" %}selected{% endif %}>{{ y.year }}</option>{% endfor %}</select></div>
 </form>
+<form method="post" action="{% url 'declarations:delete_many' %}">{% csrf_token %}
+{% if current_membership.can_edit %}
+<div class="mb-2"><button class="btn btn-sm btn-outline-danger" data-require-selection
+  data-confirm="Eliminare le pratiche selezionate? Verranno annullati anche i loro effetti sugli esemplari; nel registro di carico/scarico verranno aggiunte le rettifiche."><i class="bi bi-trash"></i> Elimina selezionate</button></div>
+{% endif %}
 <div class="card"><div class="table-responsive"><table class="table table-hover mb-0">
-<thead><tr><th>Tipo</th><th>Data evento</th><th>Esemplari</th><th>Scadenza</th><th>Stato</th><th>Protocollo</th></tr></thead>
+<thead><tr><th><input type="checkbox" class="form-check-input" id="select-all" title="Seleziona tutte"></th><th>Tipo</th><th>Data evento</th><th>Esemplari</th><th>Scadenza</th><th>Stato</th><th>Protocollo</th></tr></thead>
 {% for d in object_list %}
-<tr><td><a href="{{ d.get_absolute_url }}">{{ d.get_kind_display }}</a>{% if d.imported %} <span class="badge bg-light text-dark">storico</span>{% endif %}</td>
+<tr><td><input type="checkbox" class="form-check-input row-check" name="ids" value="{{ d.pk }}"></td><td><a href="{{ d.get_absolute_url }}">{{ d.get_kind_display }}</a>{% if d.imported %} <span class="badge bg-light text-dark">storico</span>{% endif %}</td>
 <td>{{ d.event_date|date:"d/m/Y" }}</td>
 <td><small>{% for i in d.items.all %}{{ i.quantity }}× <em>{{ i.specimen.species }}</em>{% if not forloop.last %}, {% endif %}{% endfor %}</small></td>
 <td>{% if d.deadline %}<span class="{% if d.is_overdue %}text-danger fw-bold{% endif %}">{{ d.deadline|date:"d/m/Y" }}</span>{% endif %}</td>
 <td><span class="badge bg-{{ d.status|status_color }}">{{ d.get_status_display }}</span></td>
 <td><small>{{ d.protocol_number }}</small></td></tr>
-{% empty %}<tr><td colspan="6" class="text-muted">Nessuna pratica.</td></tr>{% endfor %}
+{% empty %}<tr><td colspan="7" class="text-muted">Nessuna pratica.</td></tr>{% endfor %}
 </table></div></div>
+</form>
 {% include "_pagination.html" %}
 {% endblock %}

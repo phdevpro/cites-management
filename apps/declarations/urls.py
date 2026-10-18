@@ -24,6 +24,7 @@ urlpatterns = [
     path("<int:pk>/consegna/", lr(views.complete_transfer), name="complete_transfer"),
     path("<int:pk>/allegati/", lr(views.add_attachment), name="add_attachment"),
     path("<int:pk>/elimina/", lr(views.delete), name="delete"),
+    path("elimina/", lr(views.delete_many), name="delete_many"),
     path("pagamenti/", views.PaymentList.as_view(), name="payments"),
     path("pagamenti/nuovo/", lr(views.payment_edit), name="payment_create"),
     path("pagamenti/<int:pk>/", lr(views.payment_edit), name="payment_edit"),
