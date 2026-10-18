@@ -25,6 +25,28 @@
       {% empty %}<li class="list-group-item text-muted">Nessun sito.</li>{% endfor %}
     </ul>
   </div></div>
+  {% if current_membership.role == "owner" %}
+  <div class="card mb-4"><div class="card-body">
+    <h2 class="h5"><i class="bi bi-stars"></i> Lettura AI dei documenti</h2>
+    <p class="small text-muted">Con una chiave <a href="https://regolo.ai" target="_blank" rel="noopener">Regolo.ai</a> (server UE)
+      gli import vengono letti e registrati in automatico. La chiave è salvata cifrata con la chiave di questo profilo e
+      deve essere abilitata ai modelli <code>{{ ai_models.0 }}</code> e <code>{{ ai_models.1 }}</code>.
+      Le pagine dei documenti d'identità non vengono mai inviate.</p>
+    <p class="small mb-2">Stato:
+      {% if ai_key_set %}<span class="badge bg-success">chiave del profilo impostata</span>
+      {% elif ai_server_key %}<span class="badge bg-info">usa la chiave del server</span>
+      {% else %}<span class="badge bg-secondary">disattivata</span>{% endif %}</p>
+    <form method="post" action="{% url 'accounts:ai_key' %}">{% csrf_token %}
+      <div class="mb-2"><input type="password" name="api_key" class="form-control" autocomplete="off"
+        placeholder="{% if ai_key_set %}lascia vuoto per non modificarla{% else %}incolla la chiave API{% endif %}"></div>
+      <div class="d-flex flex-wrap gap-2">
+        <button class="btn btn-sm btn-success">Salva e verifica</button>
+        {% if ai_key_set %}<button class="btn btn-sm btn-outline-danger" name="remove" value="on"
+          onclick="return confirm('Rimuovere la chiave? Gli import useranno solo la lettura locale.')">Rimuovi</button>{% endif %}
+      </div>
+    </form>
+  </div></div>
+  {% endif %}
   <div class="card"><div class="card-body">
     <h2 class="h5">Utenti con accesso</h2>
     <ul class="list-group list-group-flush mb-3">

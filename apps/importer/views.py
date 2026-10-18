@@ -85,7 +85,7 @@ def batch(request, pk):
     return render(request, "importer/batch.html", {
         "batch": b, "files": files, "statuses": ImportedFile.Status.choices,
         "queue": queue, "total": total, "done_pct": int(100 * (total - queue) / total) if total else 100,
-        "ai_enabled": services.ai.enabled(),
+        "ai_enabled": services.ai.enabled(request.keeper),
         "to_review": b.files.filter(status=ImportedFile.Status.PARSED).count(),
     })
 

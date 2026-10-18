@@ -37,7 +37,7 @@ class AcceptTermsForm(forms.Form):
 class KeeperForm(forms.ModelForm):
     class Meta:
         model = Keeper
-        exclude = ("created_at",)
+        exclude = ("created_at", "ai_api_key")
         widgets = {
             "birth_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
             "id_doc_expiry": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
@@ -63,3 +63,11 @@ class DetentionSiteForm(forms.ModelForm):
 class MemberInviteForm(forms.Form):
     username = forms.CharField(label="Username utente esistente")
     role = forms.ChoiceField(choices=[("editor", "Collaboratore"), ("viewer", "Sola lettura"), ("owner", "Titolare")])
+
+
+class AIKeyForm(forms.Form):
+    api_key = forms.CharField(
+        label="Chiave API Regolo.ai", required=False, strip=True,
+        widget=forms.PasswordInput(attrs={"autocomplete": "off", "placeholder": "lascia vuoto per non modificarla"}),
+    )
+    remove = forms.BooleanField(label="Rimuovi la chiave (disattiva la lettura AI)", required=False)

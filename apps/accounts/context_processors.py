@@ -11,5 +11,8 @@ def keeper(request):
 def legal(request):
     from django.conf import settings
 
+    from apps.importer import ai
+
+    keeper = getattr(request, "keeper", None)
     return {"LEGAL": settings.LEGAL, "SITE_NAME": settings.SITE_NAME,
-            "AI_PROVIDER": "Regolo.ai (Seeweb S.r.l.)" if getattr(settings, "REGOLO_API_KEY", "") else ""}
+            "AI_PROVIDER": "Regolo.ai (Seeweb S.r.l.)" if ai.enabled(keeper) else ""}

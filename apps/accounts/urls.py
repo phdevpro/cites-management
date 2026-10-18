@@ -12,5 +12,6 @@ urlpatterns = [
     path("detentore/siti/nuovo/", views.site_edit, name="site_create"),
     path("detentore/siti/<int:pk>/", views.site_edit, name="site_edit"),
     path("detentore/membri/", views.member_invite, name="member_invite"),
+    path("detentore/ai/", views.ai_key, name="ai_key"),
     path("detentore/<int:pk>/attiva/", views.switch_keeper, name="switch_keeper"),
 ]

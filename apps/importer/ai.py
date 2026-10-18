@@ -157,16 +157,27 @@ class AIResult:
         return "\n\n".join(f"--- pagina {p.number} ---\n{p.text}" for p in self.pages if not p.identity)
 
 
-def enabled() -> bool:
-    return bool(getattr(settings, "REGOLO_API_KEY", ""))
+def key_for(keeper=None) -> str:
+    """The keeper's own Regolo key (stored encrypted on the profile); the server-wide
+    REGOLO_API_KEY is only a fallback for self-hosted single-user installs."""
+    from apps.vault.fields import Locked
+
+    own = getattr(keeper, "ai_api_key", "") if keeper is not None else ""
+    if own and not isinstance(own, Locked):
+        return own
+    return getattr(settings, "REGOLO_API_KEY", "")
 
 
-def client():
-    if not enabled():
-        raise AIUnavailable("REGOLO_API_KEY non impostata.")
+def enabled(keeper=None) -> bool:
+    return bool(key_for(keeper))
+
+
+def client(api_key: str):
+    if not api_key:
+        raise AIUnavailable("Chiave Regolo.ai non impostata.")
     from openai import OpenAI
 
-    return OpenAI(api_key=settings.REGOLO_API_KEY, base_url=settings.REGOLO_BASE_URL, timeout=180, max_retries=3)
+    return OpenAI(api_key=api_key, base_url=settings.REGOLO_BASE_URL, timeout=180, max_retries=3)
 
 
 # --------------------------------------------------------------------------- local page handling
@@ -221,8 +232,8 @@ def render_pages(path: Path, max_pages: int) -> list[tuple[int, bytes, str]]:
     return [(1, buf.getvalue(), "")]
 
 
-def ocr_page_remote(png: bytes) -> str:
-    resp = client().chat.completions.create(
+def ocr_page_remote(png: bytes, api_key: str) -> str:
+    resp = client(api_key).chat.completions.create(
         model=settings.AI_OCR_MODEL,
         max_tokens=4096,
         messages=[{"role": "user", "content": [
@@ -235,7 +246,7 @@ def ocr_page_remote(png: bytes) -> str:
     return (resp.choices[0].message.content or "").strip()
 
 
-def read_pages(path: Path, form_text: str = "") -> list[PageText]:
+def read_pages(path: Path, form_text: str = "", api_key: str = "") -> list[PageText]:
     pages = []
     for number, png, text in render_pages(path, settings.AI_MAX_PAGES):
         if len(text.strip()) >= 80:
@@ -246,7 +257,7 @@ def read_pages(path: Path, form_text: str = "") -> list[PageText]:
         if looks_like_identity(local):
             pages.append(PageText(number, "", "identity", True))  # never sent to the AI
             continue
-        pages.append(PageText(number, ocr_page_remote(png), "ocr-ai"))
+        pages.append(PageText(number, ocr_page_remote(png, api_key), "ocr-ai"))
     if form_text and pages:
         pages[0].text = f"[campi del modulo compilato]\n{form_text}\n\n{pages[0].text}"
     return pages
@@ -254,7 +265,8 @@ def read_pages(path: Path, form_text: str = "") -> list[PageText]:
 
 # --------------------------------------------------------------------------- extraction
 
-def extract_documents(pages: list[PageText], filename: str, path_hint: str, keeper_name: str = "") -> list[dict]:
+def extract_documents(pages: list[PageText], filename: str, path_hint: str, keeper_name: str = "",
+                      api_key: str = "") -> list[dict]:
     readable = [p for p in pages if not p.identity and p.text.strip()]
     if not readable:
         return []
@@ -262,7 +274,7 @@ def extract_documents(pages: list[PageText], filename: str, path_hint: str, keep
     who = f"Detentore che archivia i documenti: {keeper_name}\n" if keeper_name else ""
     user = f"{who}File: {path_hint or filename}\n\n{body}"
     messages = [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": user}]
-    c = client()
+    c = client(api_key)
     try:
         resp = c.chat.completions.create(
             model=settings.AI_EXTRACT_MODEL, messages=messages, max_tokens=8000, temperature=0,
@@ -319,16 +331,71 @@ def _clean(d: dict) -> dict:
     return out
 
 
-def analyze_file(path: Path, filename: str, path_hint: str, form_text: str = "", keeper_name: str = "") -> AIResult:
+class ExtractionFailed(Exception):
+    """Pages were read (OCR done) but the extraction model failed: callers can reuse result.pages."""
+
+    def __init__(self, result, cause):
+        super().__init__(explain(cause))
+        self.result = result
+
+
+def analyze_file(path: Path, filename: str, path_hint: str, form_text: str = "", keeper_name: str = "",
+                 api_key: str = "") -> AIResult:
     result = AIResult(model=settings.AI_EXTRACT_MODEL)
-    result.pages = read_pages(path, form_text)
+    try:
+        result.pages = read_pages(path, form_text, api_key)
+    except Exception as exc:
+        raise AIUnavailable(explain(exc)) from exc
     if result.pages and all(p.identity for p in result.pages):
         result.documents = [{**_clean({"type": "identity_document", "confidence": 1}),
                              "pages": [p.number for p in result.pages]}]
         return result
-    result.documents = extract_documents(result.pages, filename, path_hint, keeper_name)
+    try:
+        result.documents = extract_documents(result.pages, filename, path_hint, keeper_name, api_key)
+    except Exception as exc:
+        raise ExtractionFailed(result, exc) from exc
     ids = [p.number for p in result.pages if p.identity]
     if ids:
         result.documents.append({**_clean({"type": "identity_document", "confidence": 1}), "pages": ids})
         result.warnings.append(f"Pagine {ids}: documento d'identità, archiviato senza invio all'AI.")
     return result
+
+
+def explain(exc: Exception) -> str:
+    """Human message for Regolo errors (e.g. key not enabled for a model)."""
+    text = str(exc)
+    m = re.search(r"can only access models=\[([^\]]*)\]\. Tried to access ([\w.\-]+)", text)
+    if m:
+        return (f"la chiave Regolo non è abilitata al modello {m.group(2)} (abilitati: {m.group(1)}): "
+                f"aggiungilo ai modelli consentiti della chiave nella dashboard di Regolo")
+    if "401" in text or "Unauthorized" in text or "invalid" in text.lower() and "key" in text.lower():
+        return "chiave Regolo non valida o revocata"
+    if "429" in text:
+        return "limite di utilizzo Regolo raggiunto, riprova più tardi"
+    return text[:300]
+
+
+def check_key(api_key: str) -> list[str]:
+    """Try both configured models with a minimal request. Empty list = all good."""
+    problems = []
+    try:
+        c = client(api_key)
+    except AIUnavailable as exc:
+        return [str(exc)]
+    blank = io.BytesIO()
+    from PIL import Image
+
+    Image.new("RGB", (64, 64), "white").save(blank, "PNG")
+    probes = [
+        (settings.AI_OCR_MODEL, [{"role": "user", "content": [
+            {"type": "text", "text": "Free OCR."},
+            {"type": "image_url", "image_url": {"url": "data:image/png;base64," + base64.b64encode(blank.getvalue()).decode(),
+                                                "format": "image/png"}}]}]),
+        (settings.AI_EXTRACT_MODEL, [{"role": "user", "content": "Rispondi solo: ok"}]),
+    ]
+    for model, messages in probes:
+        try:
+            c.chat.completions.create(model=model, messages=messages, max_tokens=5)
+        except Exception as exc:
+            problems.append(f"{model}: {explain(exc)}")
+    return problems

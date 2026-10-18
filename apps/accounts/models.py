@@ -63,6 +63,10 @@ class Keeper(models.Model):
         default=False,
         help_text=_("Se sì, è obbligatorio il registro di carico e scarico (D.M. 8/1/2002)."),
     )
+    ai_api_key = EncryptedCharField(
+        _("chiave API Regolo.ai"), max_length=200, blank=True,
+        help_text=_("Per la lettura automatica dei documenti importati. Salvata cifrata con la chiave del profilo."),
+    )
     key_id = models.CharField(max_length=32, null=True, blank=True, editable=False, unique=True,
                               help_text="Id della chiave dati del profilo (la chiave non è mai salvata in chiaro).")
     created_at = models.DateTimeField(auto_now_add=True)

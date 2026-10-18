@@ -87,12 +87,19 @@ class FakeRegolo:
 
 
 @pytest.fixture
-def regolo(settings, monkeypatch):
-    settings.REGOLO_API_KEY = "test-key"
+def regolo(settings, monkeypatch, keeper):
+    settings.REGOLO_API_KEY = ""  # the key lives on the keeper profile, encrypted
     settings.AI_OCR_MODEL = "deepseek-ocr-2"
     settings.AI_EXTRACT_MODEL = "qwen3.5-122b"
+    keeper.ai_api_key = "profile-key"
+    keeper.save(update_fields=["ai_api_key"])
     fake = FakeRegolo()
-    monkeypatch.setattr(ai, "client", lambda: fake)
+
+    def client(api_key):
+        assert api_key in ("profile-key", "new-key")
+        return fake
+
+    monkeypatch.setattr(ai, "client", client)
     # local OCR (identity filter): the second page of the bundle is an ID card
     monkeypatch.setattr(ai, "_local_ocr", lambda png: ID_TEXT if b"ID-PAGE" in png else "pagina normale")
     return fake
@@ -207,9 +214,64 @@ def test_ai_failure_falls_back_to_local_reader(client_logged, keeper, hermanni, 
 
 
 @pytest.mark.django_db
+def test_extraction_denied_reuses_ocr_text(client_logged, keeper, hermanni, regolo, monkeypatch):
+    """Key enabled only for the OCR model: the OCR text is kept and parsed locally, no local OCR pass."""
+    def denied(*a, **kw):
+        raise RuntimeError("Error code: 401 - key not allowed to access model. This key can only access "
+                           "models=['deepseek-ocr-2']. Tried to access qwen3.5-122b")
+
+    monkeypatch.setattr(ai, "extract_documents", denied)
+    import apps.importer.services as svc
+
+    monkeypatch.setattr(svc, "extract", lambda p: pytest.fail("local OCR must not run again"))
+    _upload(client_logged, {"2024/DC_1234 (10.100-1) DN n. 9 Testudo hermanni.pdf": _scan_pdf(["reply"])})
+    f = ImportedFile.objects.get()
+    assert f.method == "ocr-ai" and "Nucleo CITES Trieste" in f.text
+    assert "non è abilitata al modello qwen3.5-122b" in f.parsed["notes"][0]
+    assert f.detected_kind == "REPLY"
+
+
+def test_explain_regolo_errors():
+    msg = ai.explain(RuntimeError("key not allowed to access model. This key can only access "
+                                  "models=['deepseek-ocr-2']. Tried to access qwen3.5-122b"))
+    assert "qwen3.5-122b" in msg and "dashboard di Regolo" in msg
+
+
+@pytest.mark.django_db
+def test_profile_key_is_encrypted_and_owner_only(client, client_logged, keeper, user, regolo):
+    from django.db import connection
+
+    with connection.cursor() as cur:
+        cur.execute("SELECT ai_api_key FROM accounts_keeper WHERE id = %s", [keeper.pk])
+        raw = cur.fetchone()[0]
+    assert raw.startswith("enc1:") and "profile-key" not in raw
+    page = client_logged.get("/account/detentore/").content.decode()
+    assert "Lettura AI dei documenti" in page and "profile-key" not in page  # never echoed back
+    resp = client_logged.post("/account/detentore/ai/", {"api_key": "new-key"}, follow=True)
+    assert "Verifica chiave" in resp.content.decode()
+
+    from apps.accounts.models import Membership
+    from apps.vault import services as vault
+    from conftest import make_vault_user, unlock_client
+
+    editor = make_vault_user("editor")
+    vault.share_with(Membership.objects.create(user=editor, keeper=keeper, role="editor"), keeper.dek)
+    unlock_client(client, editor)
+    assert client.post("/account/detentore/ai/", {"remove": "on"}).status_code == 403
+
+
+@pytest.mark.django_db
+def test_check_key_probes_both_models(regolo):
+    regolo.fail_extract = True
+    problems = ai.check_key("profile-key")
+    assert len(problems) == 1 and problems[0].startswith("qwen3.5-122b")
+    assert {c["model"] for c in regolo.calls} == {"deepseek-ocr-2", "qwen3.5-122b"}
+
+
+@pytest.mark.django_db
 def test_without_key_ai_is_off(client_logged, keeper, settings, monkeypatch):
     settings.REGOLO_API_KEY = ""
-    monkeypatch.setattr(ai, "client", lambda: pytest.fail("AI must not be called without a key"))
+    monkeypatch.setattr(ai, "client", lambda key: pytest.fail("AI must not be called without a key"))
     _upload(client_logged, {"x.pdf": _scan_pdf(["page"])})
     assert ImportedFile.objects.get().method != "ai"
 

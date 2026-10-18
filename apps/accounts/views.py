@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
@@ -11,7 +12,7 @@ from django.views.decorators.http import require_POST
 from apps.vault import services as vault
 
 from . import terms
-from .forms import AcceptTermsForm, DetentionSiteForm, KeeperForm, MemberInviteForm, SignupForm
+from .forms import AIKeyForm, AcceptTermsForm, DetentionSiteForm, KeeperForm, MemberInviteForm, SignupForm
 from .middleware import SESSION_KEY
 from .models import DetentionSite, Membership
 
@@ -77,7 +78,9 @@ def keeper_edit(request):
         request,
         "accounts/keeper_form.html",
         {"form": form, "sites": keeper.sites.all(), "members": keeper.memberships.select_related("user"),
-         "invite_form": MemberInviteForm()},
+         "invite_form": MemberInviteForm(), "ai_form": AIKeyForm(), "ai_key_set": bool(keeper.ai_api_key),
+         "ai_server_key": bool(getattr(settings, "REGOLO_API_KEY", "")),
+         "ai_models": (settings.AI_OCR_MODEL, settings.AI_EXTRACT_MODEL)},
     )
 
 
@@ -117,6 +120,38 @@ def member_invite(request):
             else:
                 messages.warning(request, f"{user} aggiunto, ma non ha ancora configurato la cifratura: "
                                           "quando l'avrà fatto, aggiungilo di nuovo per condividere la chiave.")
+    return redirect("accounts:keeper_edit")
+
+
+@login_required
+@require_POST
+def ai_key(request):
+    """Owner-only: set / remove / test the profile's Regolo.ai key (stored encrypted with the profile key)."""
+    if request.keeper is None or request.membership.role != Membership.Role.OWNER:
+        raise PermissionDenied
+    from apps.importer import ai
+
+    keeper = request.keeper
+    form = AIKeyForm(request.POST)
+    if not form.is_valid():
+        return redirect("accounts:keeper_edit")
+    if form.cleaned_data["remove"]:
+        keeper.ai_api_key = ""
+        keeper.save(update_fields=["ai_api_key"])
+        messages.info(request, "Chiave Regolo rimossa: gli import useranno solo la lettura locale.")
+        return redirect("accounts:keeper_edit")
+    new_key = form.cleaned_data["api_key"]
+    key = new_key or ai.key_for(keeper)
+    problems = ai.check_key(key) if key else ["nessuna chiave impostata"]
+    if new_key:
+        keeper.ai_api_key = new_key
+        keeper.save(update_fields=["ai_api_key"])
+        messages.success(request, "Chiave Regolo salvata (cifrata).")
+    if problems:
+        for p in problems:
+            messages.error(request, f"Verifica chiave: {p}")
+    else:
+        messages.success(request, "Verifica chiave riuscita: OCR ed estrazione disponibili.")
     return redirect("accounts:keeper_edit")
 
 

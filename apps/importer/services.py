@@ -94,10 +94,11 @@ def analyze_pending(batch_id: int, user=None) -> int:
         f = ImportedFile.objects.filter(batch_id=batch_id, status=ImportedFile.Status.PENDING).order_by("pk").first()
         if f is None:
             busy = ImportedFile.objects.filter(batch_id=batch_id, status=ImportedFile.Status.PROCESSING).exists()
-            if ai.enabled() and user is not None and not busy:
+            batch = ImportBatch.objects.select_related("keeper").get(pk=batch_id)
+            if ai.enabled(batch.keeper) and user is not None and not busy:
                 from .autoapply import auto_apply_batch
 
-                auto_apply_batch(ImportBatch.objects.get(pk=batch_id), user)
+                auto_apply_batch(batch, user)
             return done
         claimed = ImportedFile.objects.filter(pk=f.pk, status=ImportedFile.Status.PENDING).update(
             status=ImportedFile.Status.PROCESSING, updated_at=timezone.now())
@@ -162,8 +163,14 @@ AI_KIND = {"birth_declaration": "SCT1A", "death_declaration": "SCT5", "transfer_
            "marking_record": "OTHER", "identity_document": "ID", "other": "OTHER"}
 
 
-def _analyze_locally(imported, plain: Path, known):
-    ex = extract(plain)
+def _analyze_locally(imported, plain: Path, known, ocr_text: str = ""):
+    if ocr_text.strip():  # text already read by the AI OCR: no need for a slow local OCR pass
+        from .extract import Extraction, _acroform_values
+
+        ex = Extraction(text=ocr_text, method="ocr-ai",
+                        form_fields=_acroform_values(plain) if plain.suffix.lower() == ".pdf" else {})
+    else:
+        ex = extract(plain)
     result = parse(imported.original_name, ex.text, ex.form_fields, known)
     imported.text = ex.text[:50000]
     imported.method = ex.method
@@ -179,7 +186,7 @@ def _analyze_with_ai(imported, plain: Path):
     form = _acroform_values(plain) if plain.suffix.lower() == ".pdf" else {}
     form_text = "\n".join(f"{k}: {v}" for k, v in form.items())
     res = ai.analyze_file(plain, imported.original_name, imported.original_path, form_text,
-                          keeper_name=imported.keeper.full_name)
+                          keeper_name=imported.keeper.full_name, api_key=ai.key_for(imported.keeper))
     docs = res.documents
     main = next((d for d in docs if d["type"] not in ("identity_document", "other")), docs[0] if docs else None)
     imported.text = res.text[:50000]
@@ -205,9 +212,15 @@ def analyze(imported: ImportedFile) -> ImportedFile:
             with tempfile.TemporaryDirectory() as tmp:
                 plain = Path(tmp) / f"doc{Path(imported.original_name).suffix.lower()}"
                 plain.write_bytes(read_plain(imported.file))
-                if ai.enabled() and ext in AI_EXT:
+                if ai.enabled(imported.keeper) and ext in AI_EXT:
                     try:
                         _analyze_with_ai(imported, plain)
+                    except ai.ExtractionFailed as exc:  # pages already OCR'd by the AI: reuse that text locally
+                        log.warning("AI extraction failed for import %s: %s", imported.pk, exc)
+                        ocr_done = any(p.source == "ocr-ai" for p in exc.result.pages)
+                        _analyze_locally(imported, plain, known, ocr_text=exc.result.text if ocr_done else "")
+                        imported.parsed["notes"].insert(
+                            0, f"Lettura AI non riuscita ({exc}); usato il testo letto dall'OCR con la lettura locale.")
                     except Exception as exc:  # AI down / quota / bad answer: fall back to the local reader
                         log.warning("AI analysis failed for import %s: %s", imported.pk, exc)
                         _analyze_locally(imported, plain, known)

@@ -19,12 +19,14 @@ precedenti, scadenze e registro di carico/scarico.
 - **Import archivio**: PDF compilati (lettura campi AcroForm), PDF testuali, scansioni/immagini (OCR con Tesseract
   se installato), nomi file delle risposte (`DC_1234 (10.100-1) DN n. 9 Testudo hermanni.pdf`), ZIP per cartelle/anno,
   XLSX di esemplari. Ogni file passa da una schermata di verifica prima di essere registrato.
-- **Lettura automatica con AI (facoltativa, Regolo.ai – UE)**: con `REGOLO_API_KEY` ogni pagina viene letta
+- **Lettura automatica con AI (facoltativa, Regolo.ai – UE)**: il titolare inserisce la propria chiave Regolo in
+  *Dati detentore → Lettura AI dei documenti* (salvata cifrata con la chiave del profilo, abilitata ai modelli
+  `deepseek-ocr-2` e `qwen3.5-122b`; `REGOLO_API_KEY` sul server è solo un'alternativa facoltativa). Ogni pagina viene letta
   (OCR `deepseek-ocr-2` per le scansioni, testo diretto per i PDF), il modello `qwen3.5-122b` riconosce i documenti
   contenuti in ogni file (anche più di uno per PDF) e l'app crea in automatico nascite, decessi, cessioni, protocolli
   e pagamenti, in ordine cronologico, solo quando la corrispondenza è univoca; il resto va in revisione.
   Le pagine dei documenti d'identità sono riconosciute in locale e non vengono mai inviate.
-  Verifica configurazione e modelli: `docker exec cites_web python manage.py ai_check`.
+  Verifica dal pulsante *Salva e verifica* nel profilo (o, per la chiave del server, `manage.py ai_check`).
 - **Registro di carico e scarico** (D.M. 8/1/2002) automatico e immodificabile (solo rettifiche), export PDF/XLSX.
 - **Scadenze**: denuncia nascita 10 gg, estremi marcatura 45 gg, microchip Testudo entro 1 anno, risposte mancanti,
   documento d'identità in scadenza, specie passate in All. A (90 gg). Promemoria email: `manage.py send_reminders`.
