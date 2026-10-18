@@ -9,6 +9,8 @@ from simple_history.models import HistoricalRecords
 
 from apps.accounts.models import CitesOffice, Keeper
 from apps.registry.models import CitesDocument, Counterparty, Specimen
+from apps.vault.fields import EncryptedCharField, EncryptedJSONField, EncryptedTextField
+from apps.vault.storage import EncryptedFileField
 
 
 class Declaration(models.Model):
@@ -45,15 +47,15 @@ class Declaration(models.Model):
     counterparty = models.ForeignKey(
         Counterparty, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("controparte")
     )
-    place = models.CharField(_("luogo firma"), max_length=100, blank=True)
+    place = EncryptedCharField(_("luogo firma"), max_length=100, blank=True)
     signed_on = models.DateField(_("data firma"), default=timezone.localdate)
-    data = models.JSONField(_("dati modulo"), default=dict, blank=True)
-    pdf = models.FileField(_("PDF generato"), upload_to="declarations/pdf/", blank=True)
+    data = EncryptedJSONField(_("dati modulo"), default=dict, blank=True)
+    pdf = EncryptedFileField(_("PDF generato"), upload_to="declarations/pdf/", blank=True)
     sent_on = models.DateField(_("inviata il"), null=True, blank=True)
     channel = models.CharField(_("canale"), max_length=6, choices=Channel.choices, blank=True)
-    protocol_number = models.CharField(_("protocollo ufficio"), max_length=100, blank=True)
+    protocol_number = EncryptedCharField(_("protocollo ufficio"), max_length=100, blank=True)
     protocol_date = models.DateField(_("data protocollo"), null=True, blank=True)
-    notes = models.TextField(_("note"), blank=True)
+    notes = EncryptedTextField(_("note"), blank=True)
     imported = models.BooleanField(_("importata da archivio"), default=False)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -138,8 +140,8 @@ class Attachment(models.Model):
 
     declaration = models.ForeignKey(Declaration, on_delete=models.CASCADE, related_name="attachments")
     kind = models.CharField(max_length=10, choices=Kind.choices, default=Kind.OTHER)
-    file = models.FileField(upload_to="declarations/attachments/")
-    description = models.CharField(max_length=255, blank=True)
+    file = EncryptedFileField(upload_to="declarations/attachments/")
+    description = EncryptedCharField(max_length=255, blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -170,9 +172,9 @@ class Payment(models.Model):
     )
     amount = models.DecimalField(_("importo €"), max_digits=8, decimal_places=2)
     paid_on = models.DateField(_("data pagamento"))
-    reference = models.CharField(_("riferimento / CRO / IUV"), max_length=100, blank=True)
-    description = models.CharField(_("causale"), max_length=255, blank=True)
-    receipt = models.FileField(_("ricevuta"), upload_to="payments/", blank=True)
+    reference = EncryptedCharField(_("riferimento / CRO / IUV"), max_length=100, blank=True)
+    description = EncryptedCharField(_("causale"), max_length=255, blank=True)
+    receipt = EncryptedFileField(_("ricevuta"), upload_to="payments/", blank=True)
 
     class Meta:
         ordering = ["-paid_on"]

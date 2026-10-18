@@ -12,6 +12,8 @@ from apps.accounts.models import CitesOffice, DetentionSite, Keeper, Membership
 from apps.declarations import services
 from apps.registry.models import CitesDocument, Counterparty
 from apps.species.models import Species
+from apps.vault import services as vault
+from apps.vault.context import using
 
 
 class Command(BaseCommand):
@@ -27,15 +29,27 @@ class Command(BaseCommand):
         if Membership.objects.filter(user=user).exists():
             self.stdout.write("Demo già presente.")
             return
-        keeper = Keeper.objects.create(
+        # demo passphrase = DEMO_PASSWORD; recovery code printed once
+        private, code = vault.create_user_key(user, password)
+        vault.confirm_recovery(user, code)
+        ring = vault.keyring_for(user, private)
+        with using(ring):
+            self._seed(user)
+        self.stdout.write(self.style.SUCCESS(
+            f"Utente demo creato. Passphrase di cifratura = password demo. Chiave di recupero: {code}"))
+
+    def _seed(self, user):
+        keeper = Keeper(
             first_name="Mario", last_name="Rossi", birth_place="Udine", birth_province="UD",
             birth_date=date(1980, 1, 1), address="Via Roma 1", postal_code="33100", city="Udine", province="UD",
             phone="+39 333 0000000", email="demo@example.com", id_doc_number="AA0000000",
             cites_office=CitesOffice.objects.first(), sells_specimens=True,
         )
+        dek = vault.new_keeper_key(keeper)
+        keeper.save()
         DetentionSite.objects.create(keeper=keeper, address="Via Roma 1", postal_code="33100", city="Udine",
                                      province="UD", phone="+39 333 0000000")
-        Membership.objects.create(user=user, keeper=keeper, role="owner")
+        vault.share_with(Membership.objects.create(user=user, keeper=keeper, role="owner"), dek)
         th = Species.objects.get(scientific_name="Testudo hermanni")
         old = CitesDocument.objects.create(keeper=keeper, doc_type="old", number="PROT 123 DEL 1999",
                                            issued_on=date(1995, 5, 1))
@@ -58,4 +72,3 @@ class Command(BaseCommand):
                                 breeding_group="PROT 123 DEL 1999")
         Counterparty.objects.create(keeper=keeper, first_name="Luigi", last_name="Verdi", address="Via Garibaldi 5",
                                     postal_code="34100", city="Trieste", province="TS", phone="+39 333 1111111")
-        self.stdout.write(self.style.SUCCESS("Utente demo creato (password: DEMO_PASSWORD o default nel help)."))

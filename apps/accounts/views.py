@@ -7,6 +7,8 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from apps.vault import services as vault
+
 from .forms import DetentionSiteForm, KeeperForm, MemberInviteForm, SignupForm
 from .middleware import SESSION_KEY
 from .models import DetentionSite, Membership
@@ -28,11 +30,15 @@ def keeper_create(request):
     site_form = DetentionSiteForm(request.POST or None, prefix="site")
     if request.method == "POST" and form.is_valid() and site_form.is_valid():
         with transaction.atomic():
-            keeper = form.save()
+            keeper = form.save(commit=False)
+            dek = vault.new_keeper_key(keeper)  # data key exists before anything is written
+            keeper.save()
+            request.vault.add(keeper.pk, keeper.key_id, dek)
             site = site_form.save(commit=False)
             site.keeper = keeper
             site.save()
-            Membership.objects.create(user=request.user, keeper=keeper, role=Membership.Role.OWNER)
+            membership = Membership.objects.create(user=request.user, keeper=keeper, role=Membership.Role.OWNER)
+            vault.share_with(membership, dek)
         request.session[SESSION_KEY] = keeper.pk
         messages.success(request, f"Detentore {keeper} creato.")
         return redirect("dashboard:home")
@@ -87,10 +93,14 @@ def member_invite(request):
         if not user:
             messages.error(request, "Utente non trovato.")
         else:
-            Membership.objects.update_or_create(
+            membership, _ = Membership.objects.update_or_create(
                 user=user, keeper=request.keeper, defaults={"role": form.cleaned_data["role"]}
             )
-            messages.success(request, f"{user} aggiunto.")
+            if vault.share_with(membership, vault.keeper_dek(request.keeper)):
+                messages.success(request, f"{user} aggiunto: può sbloccare i dati con la propria passphrase.")
+            else:
+                messages.warning(request, f"{user} aggiunto, ma non ha ancora configurato la cifratura: "
+                                          "quando l'avrà fatto, aggiungilo di nuovo per condividere la chiave.")
     return redirect("accounts:keeper_edit")
 
 

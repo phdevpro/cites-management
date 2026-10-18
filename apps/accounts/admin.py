@@ -15,8 +15,8 @@ class MembershipInline(admin.TabularInline):
 
 @admin.register(Keeper)
 class KeeperAdmin(admin.ModelAdmin):
-    list_display = ("__str__", "fiscal_code", "city", "cites_office")
-    search_fields = ("first_name", "last_name", "company_name", "fiscal_code")
+    list_display = ("__str__", "cites_office", "key_id")
+    readonly_fields = ("key_id",)
     inlines = [SiteInline, MembershipInline]
 
 

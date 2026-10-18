@@ -232,6 +232,7 @@ name = "cites-management"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "cryptography" },
     { name = "django" },
     { name = "django-htmx" },
     { name = "django-simple-history" },
@@ -254,6 +255,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "cryptography", specifier = ">=50.0.2" },
     { name = "django", specifier = ">=5.1,<6" },
     { name = "django-htmx", specifier = ">=1.29.0" },
     { name = "django-simple-history", specifier = ">=3.13.0" },

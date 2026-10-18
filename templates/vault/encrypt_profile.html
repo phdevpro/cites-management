@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Cifra profilo{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-7"><div class="card"><div class="card-body p-4">
+  <h1 class="h4"><i class="bi bi-shield-lock"></i> Cifra il profilo esistente</h1>
+  <p>Questo profilo detentore è stato creato prima dell'attivazione della cifratura: dati e documenti sono ancora in chiaro.</p>
+  {% if is_owner %}
+  <p>Cifrandolo, tutti i dati personali e i file già caricati verranno riscritti cifrati con una nuova chiave del profilo.
+     Gli altri utenti con accesso che hanno già configurato la cifratura manterranno l'accesso; gli altri andranno ricondivisi.</p>
+  <form method="post">{% csrf_token %}<button class="btn btn-success">Cifra ora</button></form>
+  {% else %}
+  <p>Solo il titolare del profilo può avviare la cifratura. Chiedigli di accedere e confermarla.</p>
+  {% endif %}
+</div></div></div></div>
+{% endblock %}

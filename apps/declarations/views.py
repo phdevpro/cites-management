@@ -17,6 +17,7 @@ from apps.accounts.mixins import KeeperRequiredMixin
 from apps.pdfforms.envelope import envelope_pdf
 from apps.pdfforms.formdata import FORM_SPECS, build_form_data, get_form_data
 from apps.pdfforms.render import render_pdf
+from apps.vault.storage import read_plain
 
 from . import services
 from .forms import (AttachmentForm, BirthForm, CompleteTransferForm, DeathForm, DeclarationMetaForm, LossForm,
@@ -250,7 +251,7 @@ def download(request, pk):
     decl = _get(request, pk)
     if not decl.pdf:
         raise Http404("PDF non ancora generato")
-    return FileResponse(decl.pdf.open("rb"), filename=Path(decl.pdf.name).name, as_attachment=False)
+    return FileResponse(decl.pdf.open("rb"), filename=_filename(decl), as_attachment=False)
 
 
 def envelope(request, pk):
@@ -269,17 +270,19 @@ def bundle(request, pk):
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.writestr(_filename(decl), render_pdf(decl.kind, get_form_data(decl)))
         checklist.append("[ ] Modulo compilato e FIRMATO")
-        for att in decl.attachments.all():
-            zf.writestr(f"allegati/{Path(att.file.name).name}", att.file.read())
-        for pay in decl.payments.exclude(receipt=""):
-            zf.writestr(f"pagamenti/{Path(pay.receipt.name).name}", pay.receipt.read())
+        for n, att in enumerate(decl.attachments.all(), start=1):
+            name = slugify(Path(att.description).stem) or f"allegato-{n}"
+            zf.writestr(f"allegati/{n:02d}_{name}{Path(att.file.name).suffix}", read_plain(att.file))
+        for n, pay in enumerate(decl.payments.exclude(receipt=""), start=1):
+            zf.writestr(f"pagamenti/ricevuta_{n:02d}{Path(pay.receipt.name).suffix}", read_plain(pay.receipt))
         if decl.keeper.id_doc_file:
-            zf.writestr(f"documento_detentore{Path(decl.keeper.id_doc_file.name).suffix}", decl.keeper.id_doc_file.read())
+            zf.writestr(f"documento_detentore{Path(decl.keeper.id_doc_file.name).suffix}",
+                        read_plain(decl.keeper.id_doc_file))
         checklist.append(f"[{'x' if decl.keeper.id_doc_file else ' '}] Copia documento d'identità del dichiarante")
         if decl.kind == Declaration.Kind.TRANSFER:
             cp = decl.counterparty
             if cp and cp.id_doc_file:
-                zf.writestr(f"documento_cessionario{Path(cp.id_doc_file.name).suffix}", cp.id_doc_file.read())
+                zf.writestr(f"documento_cessionario{Path(cp.id_doc_file.name).suffix}", read_plain(cp.id_doc_file))
             checklist += [
                 f"[{'x' if cp and cp.id_doc_file else ' '}] Copia documento d'identità del cessionario",
                 f"[{'x' if decl.payments.exists() else ' '}] Ricevuta diritto speciale di prelievo (cod. W802)",

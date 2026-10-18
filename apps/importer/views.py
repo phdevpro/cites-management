@@ -119,7 +119,7 @@ def review(request, pk):
 def file_view(request, pk):
     _guard(request, edit=False)
     f = get_object_or_404(ImportedFile, pk=pk, keeper=request.keeper)
-    return FileResponse(f.file.open("rb"), filename=f.original_name, as_attachment=False)
+    return FileResponse(f.file.open("rb"), filename=f.original_name, as_attachment=False)  # decrypted by storage
 
 
 def sheet_template(request):

@@ -55,6 +55,16 @@
         {% endif %}
         <li class="nav-item"><a class="nav-link" href="{% url 'accounts:keeper_edit' %}"><i class="bi bi-person-badge"></i> {% if my_memberships|length <= 1 %}{{ current_keeper|default:"Detentore" }}{% else %}Profilo{% endif %}</a></li>
         {% if user.is_staff %}<li class="nav-item"><a class="nav-link" href="{% url 'admin:index' %}">Admin</a></li>{% endif %}
+        {% if request.vault.private_key %}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" title="Dati cifrati e sbloccati"><i class="bi bi-unlock"></i></a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><form method="post" action="{% url 'vault:lock' %}">{% csrf_token %}<button class="dropdown-item"><i class="bi bi-lock"></i> Blocca dati</button></form></li>
+            <li><a class="dropdown-item" href="{% url 'vault:change' %}">Cambia passphrase</a></li>
+            <li><a class="dropdown-item" href="{% url 'vault:recovery' %}">Nuova chiave di recupero</a></li>
+          </ul>
+        </li>
+        {% endif %}
         <li class="nav-item"><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn nav-link">Esci</button></form></li>
       </ul>
     </div>

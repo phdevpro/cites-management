@@ -43,6 +43,16 @@ class BirthResult:
 
 # --------------------------------------------------------------------------- helpers
 
+def check_microchip_free(keeper, kind: str, code: str) -> None:
+    """Microchip codes are encrypted in the DB, so uniqueness is checked here (per keeper)."""
+    if kind != Marking.Kind.MICROCHIP or not code:
+        return
+    wanted = code.replace(" ", "")
+    for m in Marking.objects.filter(specimen__keeper=keeper, kind=Marking.Kind.MICROCHIP):
+        if m.code.replace(" ", "") == wanted:
+            raise ServiceError(f"Microchip {code} già assegnato a {m.specimen}.")
+
+
 def split_lot(specimen: Specimen, quantity: int) -> Specimen:
     """Detach `quantity` animals from a lot into a new Specimen record. Returns the part to act on."""
     if quantity < 1 or quantity > specimen.quantity:
@@ -131,6 +141,7 @@ def register_birth(*, keeper, user, species, birth_date, rows: list[NewbornSpec]
             father=father, mother=mother, breeding_group=breeding_group,
         )
         if row.marking_kind:
+            check_microchip_free(keeper, row.marking_kind, row.marking_code)
             Marking.objects.create(
                 specimen=sp, kind=row.marking_kind, code=row.marking_code,
                 manufacturer=row.marking_manufacturer, applied_on=birth_date,
@@ -274,6 +285,7 @@ def register_acquisition(*, keeper, user, species, quantity: int, acquired_on: d
         birth_date=birth_date, origin=origin, acquired_from=counterparty, acquired_on=acquired_on,
     )
     if marking_kind:
+        check_microchip_free(keeper, marking_kind, marking_code)
         Marking.objects.create(specimen=sp, kind=marking_kind, code=marking_code)
     if document:
         document.specimens.add(sp)
@@ -290,6 +302,7 @@ def register_acquisition(*, keeper, user, species, quantity: int, acquired_on: d
 def add_marking(*, keeper, user, specimen: Specimen, kind: str, code: str, manufacturer: str = "",
                 applied_on: date | None = None, applied_by: str = "", notify: bool = True) -> Declaration | None:
     """Mark one animal. If the specimen is a lot, one animal is split off first."""
+    check_microchip_free(keeper, kind, code)
     target = split_lot(specimen, 1) if specimen.quantity > 1 else specimen
     Marking.objects.create(specimen=target, kind=kind, code=code, manufacturer=manufacturer,
                            applied_on=applied_on or timezone.localdate(), applied_by=applied_by)

@@ -13,7 +13,6 @@ class MarkingInline(admin.TabularInline):
 class SpecimenAdmin(SimpleHistoryAdmin):
     list_display = ("__str__", "keeper", "sex", "birth_date", "status", "quantity")
     list_filter = ("status", "species", "keeper")
-    search_fields = ("name", "markings__code")
     inlines = [MarkingInline]
 
 

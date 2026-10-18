@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Configura cifratura{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-7"><div class="card"><div class="card-body p-4">
+  <h1 class="h4"><i class="bi bi-shield-lock"></i> Proteggi i tuoi dati</h1>
+  <p>I dati personali (anagrafiche, codici fiscali, documenti d'identità, numeri di protocollo e certificati, note) e
+     <strong>tutti i documenti caricati</strong> vengono cifrati con una chiave che solo tu puoi sbloccare.</p>
+  <ul class="small">
+    <li>Scegli una <strong>passphrase di cifratura</strong>, diversa dalla password di accesso. Ti verrà chiesta a ogni sessione.</li>
+    <li>Subito dopo riceverai una <strong>chiave di recupero</strong>: è l'unico modo per rientrare se dimentichi la passphrase.</li>
+    <li>Senza passphrase né chiave di recupero i dati <strong>non sono recuperabili da nessuno</strong>, neanche dall'amministratore.</li>
+  </ul>
+  <form method="post">{% csrf_token %}
+    {% for field in form %}{% include "_field.html" %}{% endfor %}
+    {% for e in form.non_field_errors %}<div class="alert alert-danger">{{ e }}</div>{% endfor %}
+    <button class="btn btn-success">Crea chiavi</button>
+  </form>
+</div></div></div></div>
+{% endblock %}
+{% block scripts %}{% include "_bootstrapify.html" %}{% endblock %}

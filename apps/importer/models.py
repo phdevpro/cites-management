@@ -5,24 +5,31 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apps.accounts.models import Keeper
+from apps.vault.fields import EncryptedCharField, EncryptedJSONField, EncryptedTextField
+from apps.vault.storage import EncryptedFileField
 
 from .parse import KINDS
 
 
-def file_sha256(django_file) -> str:
-    h = hashlib.sha256()
+def file_sha256(django_file, keeper=None) -> str:
+    """Duplicate-detection fingerprint. For encrypted keepers it is keyed with the keeper's data key,
+    so the stored value cannot be used to confirm that someone holds a known document."""
     django_file.seek(0)
-    for chunk in django_file.chunks():
-        h.update(chunk)
+    data = b"".join(django_file.chunks())
     django_file.seek(0)
-    return h.hexdigest()
+    if keeper is not None and keeper.key_id:
+        from apps.vault import crypto
+        from apps.vault.context import ring
+
+        return crypto.keyed_hash(ring().dek(keeper.key_id), data)
+    return hashlib.sha256(data).hexdigest()
 
 
 class ImportBatch(models.Model):
     keeper = models.ForeignKey(Keeper, on_delete=models.CASCADE, related_name="import_batches")
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    label = models.CharField(max_length=200, blank=True)
+    label = EncryptedCharField(max_length=200, blank=True)
 
     class Meta:
         ordering = ["-created_at"]
@@ -42,17 +49,17 @@ class ImportedFile(models.Model):
 
     batch = models.ForeignKey(ImportBatch, on_delete=models.CASCADE, related_name="files")
     keeper = models.ForeignKey(Keeper, on_delete=models.CASCADE, related_name="imported_files")
-    file = models.FileField(upload_to="imports/")
-    original_name = models.CharField(max_length=255)
-    original_path = models.CharField(max_length=500, blank=True)
+    file = EncryptedFileField(upload_to="imports/")
+    original_name = EncryptedCharField(max_length=255)
+    original_path = EncryptedCharField(max_length=500, blank=True)
     sha256 = models.CharField(max_length=64, db_index=True)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
     detected_kind = models.CharField(_("tipo rilevato"), max_length=8, choices=list(KINDS.items()), default="OTHER")
     confidence = models.FloatField(default=0)
     method = models.CharField(max_length=10, blank=True)
-    text = models.TextField(blank=True)
-    parsed = models.JSONField(default=dict, blank=True)
-    error = models.TextField(blank=True)
+    text = EncryptedTextField(blank=True)
+    parsed = EncryptedJSONField(default=dict, blank=True)
+    error = EncryptedTextField(blank=True)
     year_hint = models.PositiveIntegerField(null=True, blank=True)
     declaration = models.ForeignKey(
         "declarations.Declaration", on_delete=models.SET_NULL, null=True, blank=True, related_name="imported_files"
@@ -62,7 +69,7 @@ class ImportedFile(models.Model):
     )
 
     class Meta:
-        ordering = ["year_hint", "original_path", "original_name"]
+        ordering = ["year_hint", "pk"]
         constraints = [models.UniqueConstraint(fields=["keeper", "sha256"], name="unique_import_per_keeper")]
 
     def __str__(self):

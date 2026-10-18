@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
@@ -39,10 +39,11 @@ class SpecimenList(KeeperRequiredMixin, ListView):
             qs = qs.filter(status=status)
         if self.request.GET.get("species"):
             qs = qs.filter(species_id=self.request.GET["species"])
-        q = self.request.GET.get("q", "").strip()
+        q = self.request.GET.get("q", "").strip().lower()
         if q:
-            qs = qs.filter(Q(name__icontains=q) | Q(markings__code__icontains=q) | Q(notes__icontains=q)
-                           | Q(species__scientific_name__icontains=q)).distinct()
+            # personal fields are encrypted in the DB: search after decryption
+            qs = [sp for sp in qs if q in " ".join(
+                [sp.name, sp.notes, sp.species.scientific_name] + [m.code for m in sp.markings.all()]).lower()]
         return qs
 
     def get_context_data(self, **kwargs):
@@ -177,9 +178,10 @@ class CounterpartyList(KeeperRequiredMixin, ListView):
     template_name = "registry/counterparty_list.html"
 
     def get_queryset(self):
-        return super().get_queryset().annotate(
+        qs = super().get_queryset().annotate(
             n_in=Count("specimens_sold", distinct=True), n_out=Count("specimens_bought", distinct=True)
         )
+        return sorted(qs, key=lambda c: str(c).lower())
 
 
 class CounterpartyCreate(KeeperEditMixin, CreateView):

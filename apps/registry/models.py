@@ -9,35 +9,37 @@ from simple_history.models import HistoricalRecords
 
 from apps.accounts.models import DetentionSite, Keeper
 from apps.species.models import Species
+from apps.vault.fields import EncryptedCharField, EncryptedDateField, EncryptedEmailField, EncryptedTextField
+from apps.vault.storage import EncryptedFileField, EncryptedImageField
 
 
 class Counterparty(models.Model):
     """Cedente / cessionario (rubrica del detentore)."""
 
     keeper = models.ForeignKey(Keeper, on_delete=models.CASCADE, related_name="counterparties")
-    first_name = models.CharField(_("nome"), max_length=100, blank=True)
-    last_name = models.CharField(_("cognome"), max_length=100, blank=True)
-    company_name = models.CharField(_("ragione sociale / allevamento"), max_length=200, blank=True)
-    fiscal_code = models.CharField(_("codice fiscale / P.IVA"), max_length=16, blank=True)
-    birth_place = models.CharField(_("luogo di nascita"), max_length=100, blank=True)
-    birth_date = models.DateField(_("data di nascita"), null=True, blank=True)
-    address = models.CharField(_("via e civico"), max_length=200, blank=True)
-    postal_code = models.CharField(_("CAP"), max_length=5, blank=True)
-    city = models.CharField(_("comune"), max_length=100, blank=True)
-    province = models.CharField(_("provincia"), max_length=2, blank=True)
-    phone = models.CharField(_("telefono"), max_length=50, blank=True)
-    email = models.EmailField(_("email"), blank=True)
-    id_doc_number = models.CharField(_("documento identità n."), max_length=50, blank=True)
-    id_doc_file = models.FileField(_("copia documento"), upload_to="counterparties/id/", blank=True)
+    first_name = EncryptedCharField(_("nome"), max_length=100, blank=True)
+    last_name = EncryptedCharField(_("cognome"), max_length=100, blank=True)
+    company_name = EncryptedCharField(_("ragione sociale / allevamento"), max_length=200, blank=True)
+    fiscal_code = EncryptedCharField(_("codice fiscale / P.IVA"), max_length=16, blank=True)
+    birth_place = EncryptedCharField(_("luogo di nascita"), max_length=100, blank=True)
+    birth_date = EncryptedDateField(_("data di nascita"), null=True, blank=True)
+    address = EncryptedCharField(_("via e civico"), max_length=200, blank=True)
+    postal_code = EncryptedCharField(_("CAP"), max_length=5, blank=True)
+    city = EncryptedCharField(_("comune"), max_length=100, blank=True)
+    province = EncryptedCharField(_("provincia"), max_length=2, blank=True)
+    phone = EncryptedCharField(_("telefono"), max_length=50, blank=True)
+    email = EncryptedEmailField(_("email"), blank=True)
+    id_doc_number = EncryptedCharField(_("documento identità n."), max_length=50, blank=True)
+    id_doc_file = EncryptedFileField(_("copia documento"), upload_to="counterparties/id/", blank=True)
     breeding_type = models.CharField(
         _("tipologia allevamento"), max_length=20, blank=True,
         choices=[("amatoriale", "Amatoriale"), ("commerciale", "Commerciale"), ("zoo", "Giardino zoologico"),
                  ("recupero", "Centro recupero"), ("altro", "Altro")],
     )
-    notes = models.TextField(_("note"), blank=True)
+    notes = EncryptedTextField(_("note"), blank=True)
 
     class Meta:
-        ordering = ["last_name", "first_name", "company_name"]
+        ordering = ["pk"]  # names are encrypted: sort in Python
         verbose_name = _("controparte")
         verbose_name_plural = _("controparti")
 
@@ -90,7 +92,7 @@ class Specimen(models.Model):
     keeper = models.ForeignKey(Keeper, on_delete=models.CASCADE, related_name="specimens")
     species = models.ForeignKey(Species, on_delete=models.PROTECT, related_name="specimens", verbose_name=_("specie"))
     site = models.ForeignKey(DetentionSite, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("sito"))
-    name = models.CharField(_("nome / identificativo interno"), max_length=100, blank=True)
+    name = EncryptedCharField(_("nome / identificativo interno"), max_length=100, blank=True)
     quantity = models.PositiveIntegerField(_("numero esemplari"), default=1)
     sex = models.CharField(_("sesso"), max_length=1, choices=Sex.choices, default=Sex.UNKNOWN)
     birth_date = models.DateField(_("data di nascita"), null=True, blank=True)
@@ -107,7 +109,7 @@ class Specimen(models.Model):
         "self", on_delete=models.SET_NULL, null=True, blank=True, related_name="children_as_mother",
         verbose_name=_("madre"), limit_choices_to={"sex": "F"},
     )
-    breeding_group = models.CharField(
+    breeding_group = EncryptedCharField(
         _("gruppo riproduttore"), max_length=255, blank=True,
         help_text=_("Se i genitori non sono individuabili univocamente (es. 'PROT 123 DEL 1999')."),
     )
@@ -124,9 +126,9 @@ class Specimen(models.Model):
         Counterparty, on_delete=models.SET_NULL, null=True, blank=True, related_name="specimens_bought",
         verbose_name=_("ceduto a"),
     )
-    cause_of_death = models.CharField(_("causa decesso"), max_length=255, blank=True)
-    photo = models.ImageField(_("foto"), upload_to="specimens/", blank=True)
-    notes = models.TextField(_("note"), blank=True)
+    cause_of_death = EncryptedCharField(_("causa decesso"), max_length=255, blank=True)
+    photo = EncryptedImageField(_("foto"), upload_to="specimens/", blank=True)
+    notes = EncryptedTextField(_("note"), blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     history = HistoricalRecords()
 
@@ -197,21 +199,15 @@ class Marking(models.Model):
 
     specimen = models.ForeignKey(Specimen, on_delete=models.CASCADE, related_name="markings")
     kind = models.CharField(_("tipo marcatura"), max_length=10, choices=Kind.choices, default=Kind.MICROCHIP)
-    code = models.CharField(_("estremi / codice"), max_length=100, blank=True)
-    manufacturer = models.CharField(_("produttore"), max_length=100, blank=True)
+    code = EncryptedCharField(_("estremi / codice"), max_length=100, blank=True)
+    manufacturer = EncryptedCharField(_("produttore"), max_length=100, blank=True)
     applied_on = models.DateField(_("data applicazione"), null=True, blank=True)
-    applied_by = models.CharField(_("applicato da (veterinario)"), max_length=200, blank=True)
-    photo = models.ImageField(_("foto"), upload_to="markings/", blank=True)
+    applied_by = EncryptedCharField(_("applicato da (veterinario)"), max_length=200, blank=True)
+    photo = EncryptedImageField(_("foto"), upload_to="markings/", blank=True)
 
     class Meta:
         verbose_name = _("marcatura")
         verbose_name_plural = _("marcature")
-        constraints = [
-            models.UniqueConstraint(
-                fields=["kind", "code"], condition=~models.Q(code="") & models.Q(kind="microchip"),
-                name="unique_microchip_code",
-            )
-        ]
 
     def __str__(self):
         return self.label
@@ -234,15 +230,15 @@ class CitesDocument(models.Model):
 
     keeper = models.ForeignKey(Keeper, on_delete=models.CASCADE, related_name="cites_documents")
     doc_type = models.CharField(_("tipo"), max_length=10, choices=DocType.choices)
-    number = models.CharField(_("numero / protocollo"), max_length=100, help_text="es. IT/CE/2024/XX/00001, 1234 10/100-1")
+    number = EncryptedCharField(_("numero / protocollo"), max_length=100, help_text="es. IT/CE/2024/XX/00001, 1234 10/100-1")
     issued_on = models.DateField(_("data"), null=True, blank=True)
-    issuer = models.CharField(_("rilasciato da (ufficio/Stato)"), max_length=200, blank=True)
-    file = models.FileField(_("file"), upload_to="cites_documents/", blank=True)
+    issuer = EncryptedCharField(_("rilasciato da (ufficio/Stato)"), max_length=200, blank=True)
+    file = EncryptedFileField(_("file"), upload_to="cites_documents/", blank=True)
     specimens = models.ManyToManyField(Specimen, related_name="cites_documents", blank=True, verbose_name=_("esemplari"))
     returned_on = models.DateField(
         _("restituito il"), null=True, blank=True, help_text=_("Certificato restituito (es. con SCT5).")
     )
-    notes = models.TextField(_("note"), blank=True)
+    notes = EncryptedTextField(_("note"), blank=True)
 
     class Meta:
         ordering = ["-issued_on", "-pk"]
@@ -293,9 +289,9 @@ class RegisterEntry(models.Model):
     specimen = models.ForeignKey(Specimen, on_delete=models.SET_NULL, null=True, blank=True, related_name="register_entries")
     quantity = models.PositiveIntegerField(_("quantità"), default=1)
     description = models.CharField(_("descrizione"), max_length=255, default="esemplare vivo")
-    marking = models.CharField(_("marcatura"), max_length=255, blank=True)
-    document = models.CharField(_("documento CITES"), max_length=255, blank=True)
-    counterparty = models.CharField(_("provenienza / destinazione"), max_length=255, blank=True)
+    marking = EncryptedCharField(_("marcatura"), max_length=255, blank=True)
+    document = EncryptedCharField(_("documento CITES"), max_length=255, blank=True)
+    counterparty = EncryptedCharField(_("provenienza / destinazione"), max_length=255, blank=True)
     carico_ref = models.ForeignKey(
         "self", on_delete=models.PROTECT, null=True, blank=True, related_name="scarichi",
         verbose_name=_("riferimento carico"),
@@ -304,7 +300,7 @@ class RegisterEntry(models.Model):
         "self", on_delete=models.PROTECT, null=True, blank=True, related_name="corrections",
         verbose_name=_("rettifica la registrazione"),
     )
-    notes = models.CharField(_("note"), max_length=255, blank=True)
+    notes = EncryptedCharField(_("note"), max_length=255, blank=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:

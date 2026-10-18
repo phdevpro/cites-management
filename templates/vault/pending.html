@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Accesso in attesa{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-7"><div class="card"><div class="card-body p-4">
+  <h1 class="h4"><i class="bi bi-hourglass"></i> Accesso in attesa</h1>
+  <p>Non hai ancora la chiave per questo profilo. Chiedi al titolare di ricondividerlo: in <em>Dati detentore → Utenti con accesso</em>
+     deve aggiungerti di nuovo (dopo che hai configurato la cifratura).</p>
+  {% if memberships|length > 1 %}
+  <p>Oppure passa a un altro profilo:</p>
+  {% for m in memberships %}
+  <form method="post" action="{% url 'accounts:switch_keeper' m.keeper_id %}" class="d-inline">{% csrf_token %}
+    <button class="btn btn-outline-secondary btn-sm mb-1">{{ m.keeper }}</button></form>
+  {% endfor %}
+  {% endif %}
+</div></div></div></div>
+{% endblock %}

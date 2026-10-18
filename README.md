@@ -26,6 +26,25 @@ precedenti, scadenze e registro di carico/scarico.
 - Diritti speciali di prelievo (W802, U669, Y121, P048, Q840) e pagamenti con ricevute.
 - Sincronizzazione allegati/appendici da Species+ (`manage.py sync_speciesplus`, richiede `SPECIESPLUS_TOKEN`).
 
+## Cifratura dei dati personali
+
+Ogni profilo detentore ha una propria **chiave dati** (AES-256-GCM). Ogni utente ha una **coppia di chiavi** X25519:
+la chiave privata è salvata solo cifrata, con la **passphrase di cifratura** dell'utente (scrypt) e con una
+**chiave di recupero** mostrata una sola volta alla configurazione. La chiave dati del profilo è sigillata con la
+chiave pubblica di ogni membro, così il titolare può condividere l'accesso senza conoscere la passphrase altrui.
+
+- Dopo il login si inserisce la passphrase (distinta dalla password di accesso); le chiavi sbloccate restano
+  in un cookie cifrato legato alla sessione (12 ore, `VAULT_UNLOCK_MAX_AGE`), mai nel database. Menu 🔓 → *Blocca dati*.
+- **Cifrati**: anagrafiche (nomi, codice fiscale, date di nascita, indirizzi, telefoni, email, documenti d'identità),
+  controparti, nomi e note degli esemplari, microchip/anelli, numeri di protocollo e certificati, dati dei moduli,
+  testo estratto dagli import, storico modifiche e **tutti i file** (contenuto cifrato, nomi casuali).
+- **In chiaro**, per scadenze, promemoria e registro: date degli eventi, specie, quantità, stati, tipi di pratica,
+  username ed email di accesso. Le email di promemoria indicano solo il numero di scadenze.
+- Senza passphrase **e** chiave di recupero i dati non sono recuperabili da nessuno, amministratore compreso.
+- Collaboratori: devono prima configurare la propria cifratura; poi il titolare li aggiunge da *Dati detentore*.
+- Aggiornamento da una versione senza cifratura: al primo accesso il titolare configura la passphrase e conferma
+  *Cifra profilo*; dati, storico e file esistenti vengono riscritti cifrati.
+
 ## Avvio
 
 ```bash
@@ -33,7 +52,7 @@ uv sync
 cp .env.example .env            # imposta DJANGO_SECRET_KEY in produzione
 uv run python manage.py migrate
 uv run python manage.py load_initial_data   # specie, diritti, uffici CITES
-uv run python manage.py createsuperuser     # oppure: seed_demo per dati di esempio
+uv run python manage.py createsuperuser     # oppure: seed_demo (passphrase demo = DEMO_PASSWORD)
 uv run python manage.py runserver
 ```
 
@@ -42,7 +61,7 @@ OCR delle scansioni (facoltativo, Fedora): `sudo dnf install tesseract tesseract
 Import di un'intera cartella di archivio per il detentore con id 1, poi verifica da *Importa*:
 
 ```bash
-uv run python manage.py import_archive "CITES Denuncia Tartarughe" --keeper 1
+uv run python manage.py import_archive "CITES Denuncia Tartarughe" --keeper 1 --user <username>
 ```
 
 Promemoria giornalieri (cron): `uv run python manage.py send_reminders`.

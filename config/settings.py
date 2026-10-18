@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "django.contrib.humanize",
     "django_htmx",
     "simple_history",
+    "apps.vault",
     "apps.accounts",
     "apps.species",
     "apps.registry",
@@ -57,7 +58,9 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django_htmx.middleware.HtmxMiddleware",
     "simple_history.middleware.HistoryRequestMiddleware",
+    "apps.vault.middleware.VaultActivateMiddleware",
     "apps.accounts.middleware.CurrentKeeperMiddleware",
+    "apps.vault.middleware.VaultGateMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -119,7 +122,8 @@ STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = Path(os.environ.get("STATIC_ROOT", BASE_DIR / "staticfiles"))
 STORAGES = {
-    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    # uploads are encrypted with the owning keeper's key and stored under random names
+    "default": {"BACKEND": "apps.vault.storage.EncryptedFileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage" if not DEBUG
                     else "django.contrib.staticfiles.storage.StaticFilesStorage"},
 }
@@ -168,3 +172,7 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = os.environ.get("DJANGO_SECURE_COOKIES", "1") == "1"
     CSRF_COOKIE_SECURE = SESSION_COOKIE_SECURE
     SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# Encryption: scrypt cost for passphrases (2**15 ≈ 32 MB, ~0.1 s) and unlock lifetime
+VAULT_SCRYPT_N = int(os.environ.get("VAULT_SCRYPT_N", 2 ** 15))
+VAULT_UNLOCK_MAX_AGE = int(os.environ.get("VAULT_UNLOCK_MAX_AGE", 12 * 3600))

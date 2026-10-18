@@ -28,7 +28,8 @@ class BirthForm(forms.Form):
         alive = _alive(keeper)
         self.fields["father"].queryset = alive.filter(sex="M")
         self.fields["mother"].queryset = alive.filter(sex="F")
-        last = Specimen.objects.filter(keeper=keeper, origin="born").exclude(breeding_group="").order_by("-pk").first()
+        last = next((s for s in Specimen.objects.filter(keeper=keeper, origin="born").order_by("-pk")[:50]
+                     if s.breeding_group), None)
         if last and not self.is_bound:
             self.fields["breeding_group"].initial = last.breeding_group
             self.fields["species"].initial = last.species_id

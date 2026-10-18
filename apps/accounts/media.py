@@ -5,7 +5,10 @@ from pathlib import Path
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.core.files.storage import default_storage
 from django.http import FileResponse, Http404
+
+from apps.vault.context import VaultLocked
 
 # (app_label.Model, file field, lookup path to Keeper)
 PROTECTED = [
@@ -40,4 +43,8 @@ def protected_media(request, path):
     if root not in full.parents or not full.is_file() or not _allowed(request.user, path):
         raise Http404
     content_type, _ = mimetypes.guess_type(full.name)
-    return FileResponse(full.open("rb"), content_type=content_type or "application/octet-stream")
+    try:
+        fh = default_storage.open(path)  # decrypts with the owner's (unlocked) key
+    except VaultLocked:
+        raise Http404 from None
+    return FileResponse(fh, content_type=content_type or "application/octet-stream")

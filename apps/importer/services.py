@@ -1,5 +1,6 @@
 import io
 import re
+import tempfile
 import zipfile
 from datetime import date, datetime
 from pathlib import Path
@@ -11,6 +12,7 @@ from apps.declarations import services as decl_services
 from apps.declarations.models import Attachment, Declaration, Payment
 from apps.registry.models import CitesDocument, Specimen
 from apps.species.models import Species
+from apps.vault.storage import read_plain
 
 from .extract import IMAGE_EXT, PDF_EXT, SHEET_EXT, extract
 from .models import ImportedFile, file_sha256
@@ -29,7 +31,7 @@ def add_file(batch, django_file, original_name: str, original_path: str = "") ->
     ext = Path(original_name).suffix.lower()
     if ext not in ALLOWED_EXT:
         return None, f"{original_name}: formato non supportato"
-    sha = file_sha256(django_file)
+    sha = file_sha256(django_file, batch.keeper)
     existing = ImportedFile.objects.filter(keeper=batch.keeper, sha256=sha).first()
     if existing:
         return None, f"{original_name}: già importato ({existing.original_path or existing.original_name})"
@@ -80,7 +82,11 @@ def analyze(imported: ImportedFile) -> ImportedFile:
             imported.method = "xlsx"
             imported.parsed = {"kind": "SHEET", "data": {}, "rows": [], "notes": []}
         else:
-            ex = extract(Path(imported.file.path))
+            # stored file is encrypted: extract from a decrypted temporary copy
+            with tempfile.TemporaryDirectory() as tmp:
+                plain = Path(tmp) / f"doc{Path(imported.original_name).suffix.lower()}"
+                plain.write_bytes(read_plain(imported.file))
+                ex = extract(plain)
             result = parse(imported.original_name, ex.text, ex.form_fields, known)
             imported.text = ex.text[:50000]
             imported.method = ex.method

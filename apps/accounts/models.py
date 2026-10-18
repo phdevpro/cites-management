@@ -2,6 +2,9 @@ from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from apps.vault.fields import EncryptedCharField, EncryptedDateField, EncryptedEmailField
+from apps.vault.storage import EncryptedFileField
+
 from .validators import validate_codice_fiscale
 
 
@@ -32,26 +35,26 @@ class Keeper(models.Model):
         PAT = "PAT", _("Patente")
         PASS = "PASS", _("Passaporto")
 
-    first_name = models.CharField(_("nome"), max_length=100)
-    last_name = models.CharField(_("cognome"), max_length=100)
-    company_name = models.CharField(_("ragione sociale / nome allevamento"), max_length=200, blank=True)
-    fiscal_code = models.CharField(
+    first_name = EncryptedCharField(_("nome"), max_length=100)
+    last_name = EncryptedCharField(_("cognome"), max_length=100)
+    company_name = EncryptedCharField(_("ragione sociale / nome allevamento"), max_length=200, blank=True)
+    fiscal_code = EncryptedCharField(
         _("codice fiscale"), max_length=16, blank=True, validators=[validate_codice_fiscale]
     )
-    birth_place = models.CharField(_("luogo di nascita"), max_length=100, blank=True)
-    birth_province = models.CharField(_("provincia di nascita"), max_length=2, blank=True)
-    birth_date = models.DateField(_("data di nascita"), null=True, blank=True)
-    address = models.CharField(_("via e civico"), max_length=200, blank=True)
-    postal_code = models.CharField(_("CAP"), max_length=5, blank=True)
-    city = models.CharField(_("comune di residenza"), max_length=100, blank=True)
-    province = models.CharField(_("provincia"), max_length=2, blank=True)
-    phone = models.CharField(_("telefono"), max_length=50, blank=True)
-    email = models.EmailField(_("email"), blank=True)
-    pec = models.EmailField(_("PEC"), blank=True)
+    birth_place = EncryptedCharField(_("luogo di nascita"), max_length=100, blank=True)
+    birth_province = EncryptedCharField(_("provincia di nascita"), max_length=2, blank=True)
+    birth_date = EncryptedDateField(_("data di nascita"), null=True, blank=True)
+    address = EncryptedCharField(_("via e civico"), max_length=200, blank=True)
+    postal_code = EncryptedCharField(_("CAP"), max_length=5, blank=True)
+    city = EncryptedCharField(_("comune di residenza"), max_length=100, blank=True)
+    province = EncryptedCharField(_("provincia"), max_length=2, blank=True)
+    phone = EncryptedCharField(_("telefono"), max_length=50, blank=True)
+    email = EncryptedEmailField(_("email"), blank=True)
+    pec = EncryptedEmailField(_("PEC"), blank=True)
     id_doc_type = models.CharField(_("tipo documento"), max_length=4, choices=IdDocType.choices, default=IdDocType.CI)
-    id_doc_number = models.CharField(_("numero documento"), max_length=50, blank=True)
+    id_doc_number = EncryptedCharField(_("numero documento"), max_length=50, blank=True)
     id_doc_expiry = models.DateField(_("scadenza documento"), null=True, blank=True)
-    id_doc_file = models.FileField(_("copia documento"), upload_to="keepers/id/", blank=True)
+    id_doc_file = EncryptedFileField(_("copia documento"), upload_to="keepers/id/", blank=True)
     cites_office = models.ForeignKey(
         CitesOffice, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("ufficio CITES di riferimento")
     )
@@ -60,10 +63,12 @@ class Keeper(models.Model):
         default=False,
         help_text=_("Se sì, è obbligatorio il registro di carico e scarico (D.M. 8/1/2002)."),
     )
+    key_id = models.CharField(max_length=32, null=True, blank=True, editable=False, unique=True,
+                              help_text="Id della chiave dati del profilo (la chiave non è mai salvata in chiaro).")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["last_name", "first_name"]
+        ordering = ["pk"]  # names are encrypted: sort in Python
         verbose_name = _("detentore")
         verbose_name_plural = _("detentori")
 
@@ -93,17 +98,17 @@ class DetentionSite(models.Model):
     """Sito di detenzione / allevamento."""
 
     keeper = models.ForeignKey(Keeper, on_delete=models.CASCADE, related_name="sites")
-    name = models.CharField(_("nome allevamento"), max_length=200, blank=True)
-    address = models.CharField(_("via e civico"), max_length=200)
-    postal_code = models.CharField(_("CAP"), max_length=5, blank=True)
-    city = models.CharField(_("comune"), max_length=100)
-    province = models.CharField(_("provincia"), max_length=2, blank=True)
-    phone = models.CharField(_("telefono/fax"), max_length=50, blank=True)
+    name = EncryptedCharField(_("nome allevamento"), max_length=200, blank=True)
+    address = EncryptedCharField(_("via e civico"), max_length=200)
+    postal_code = EncryptedCharField(_("CAP"), max_length=5, blank=True)
+    city = EncryptedCharField(_("comune"), max_length=100)
+    province = EncryptedCharField(_("provincia"), max_length=2, blank=True)
+    phone = EncryptedCharField(_("telefono/fax"), max_length=50, blank=True)
     is_default = models.BooleanField(_("predefinito"), default=True)
     art54_submitted_on = models.DateField(
         _("dichiarazione conformità art. 54 Reg. 865/2006 – data"), null=True, blank=True
     )
-    art54_protocol = models.CharField(_("art. 54 – protocollo"), max_length=100, blank=True)
+    art54_protocol = EncryptedCharField(_("art. 54 – protocollo"), max_length=100, blank=True)
 
     class Meta:
         verbose_name = _("sito di detenzione")
@@ -127,6 +132,8 @@ class Membership(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="memberships")
     keeper = models.ForeignKey(Keeper, on_delete=models.CASCADE, related_name="memberships")
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.OWNER)
+    wrapped_dek = models.BinaryField(null=True, blank=True, editable=False,
+                                     help_text="Chiave dati del profilo sigillata con la chiave pubblica dell'utente.")
 
     class Meta:
         unique_together = [("user", "keeper")]

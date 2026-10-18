@@ -9,7 +9,7 @@
       {% include "_form.html" %}
       <button class="btn btn-success">Carica e analizza</button>
     </form>
-    <p class="small text-muted mt-3 mb-0">Cartella intera da riga di comando: <code>uv run manage.py import_archive "CITES Denuncia Tartarughe" --keeper {{ current_keeper.pk }}</code></p>
+    <p class="small text-muted mt-3 mb-0">Cartella intera da riga di comando: <code>uv run manage.py import_archive "CITES Denuncia Tartarughe" --keeper {{ current_keeper.pk }} --user {{ user.username }}</code></p>
   </div></div>
   <div class="card"><div class="card-body">
     <h2 class="h6">Esemplari da foglio Excel (consistenza iniziale)</h2>
