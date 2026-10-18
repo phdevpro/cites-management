@@ -66,6 +66,56 @@ I file caricati (documenti d'identità, certificati) stanno nel volume `media` e
 del detentore proprietario. OCR (Tesseract ita) è incluso nell'immagine.
 Aggiornamento: `docker compose pull && docker compose up -d`. Backup: volume `pgdata` + volume `media`.
 
+## Portainer + Traefik
+
+Stack pronto in [`deploy/portainer-stack.yml`](deploy/portainer-stack.yml), pensato per un Traefik già attivo
+sulla rete esterna `letsencrypt` (entrypoint `websecure`, certresolver `cloudflare`).
+
+| Servizio | Ruolo |
+|---|---|
+| `cites-web` | App (immagine GHCR), esposta da Traefik su `CITES_HOST` |
+| `cites-reminders` | Invia ogni giorno le email di scadenza (richiede `EMAIL_*`) |
+| `cites-db` | Postgres 16 (volume `cites-db-data`) |
+| `cites-db-backup` | Dump notturno alle 03:00 in `DBBK_LOCATION` (7 giorni, 4 settimane, 6 mesi) |
+
+I file caricati stanno nel volume `cites-media`.
+
+1. Sul server Docker dove gira Portainer (via SSH, non dal tuo PC) crea la cartella dei backup:
+   ```bash
+   sudo mkdir -p /srv/cites/db-backups
+   ```
+2. In Portainer: **Stacks → Add stack → Repository**
+   - Repository URL: `https://github.com/phdevpro/cites-management`
+   - Reference: `refs/heads/main`
+   - Compose path: `deploy/portainer-stack.yml`
+3. In **Environment variables** usa *Load variables from .env file* con
+   [`deploy/stack.env.example`](deploy/stack.env.example) e imposta almeno:
+   - `CITES_HOST` (es. `cites.tuodominio.it`, il record DNS deve puntare a Traefik)
+   - `DJANGO_SECRET_KEY`: `python3 -c "import secrets; print(secrets.token_urlsafe(50))"`
+   - `DB_PASSWORD`
+   - `DBBK_LOCATION` (la cartella del punto 1)
+
+   Portainer salva le variabili come `stack.env`, il file letto dallo stack.
+4. **Deploy the stack**, poi crea l'amministratore:
+   ```bash
+   docker exec -it cites_web python manage.py createsuperuser
+   ```
+5. Accedi su `https://CITES_HOST`, crea il profilo detentore e imposta l'ufficio CITES di riferimento.
+
+**Aggiornamenti:** nello stack, *Pull and redeploy* con *Re-pull image* attivo.
+
+**Backup:** i dump di Postgres sono in `DBBK_LOCATION`. Il volume `cites-media` (documenti caricati) va incluso
+nel backup dell'host: Portainer lo nomina con il prefisso dello stack, es. `cites_cites-media`.
+Ripristino: i dump più recenti sono in `DBBK_LOCATION/last/` (formato *custom* di Postgres); vanno caricati con
+`pg_restore` dentro `cites_postgres` a stack fermo, seguendo la documentazione di `prodrigestivill/postgres-backup-local`.
+
+**Note:**
+- Nei middleware Traefik si usa `customFrameOptionsValue=SAMEORIGIN` al posto di `frameDeny`, altrimenti
+  l'anteprima PDF dentro l'app resta vuota.
+- Lo stack non pubblica porte sulla LAN: i cookie sono solo HTTPS. Per l'accesso diretto in HTTP aggiungi
+  `ports: ["8000:8000"]` a `cites-web` e imposta `DJANGO_SECURE_COOKIES=0` (sconsigliato).
+- Per fissare una versione invece di `latest` imposta `CITES_VERSION` (es. `sha-422cc65`).
+
 ## Test
 
 ```bash
