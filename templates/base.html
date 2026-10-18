@@ -62,6 +62,7 @@
             <li><form method="post" action="{% url 'vault:lock' %}">{% csrf_token %}<button class="dropdown-item"><i class="bi bi-lock"></i> Blocca dati</button></form></li>
             <li><a class="dropdown-item" href="{% url 'vault:change' %}">Cambia passphrase</a></li>
             <li><a class="dropdown-item" href="{% url 'vault:recovery' %}">Nuova chiave di recupero</a></li>
+            {% if user.is_staff %}<li><a class="dropdown-item" href="{% url 'accounts:otp_backup' %}">Codici di backup 2FA</a></li>{% endif %}
           </ul>
         </li>
         {% endif %}

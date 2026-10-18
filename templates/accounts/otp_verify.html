@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Verifica accesso{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-md-5"><div class="card"><div class="card-body p-4">
+  <h1 class="h4"><i class="bi bi-shield-check"></i> Verifica in due passaggi</h1>
+  <p class="small text-muted">Inserisci il codice a 6 cifre dell'app di autenticazione, oppure un codice di backup.</p>
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    {% include "_field.html" with field=form.token %}
+    <button class="btn btn-success w-100">Verifica</button>
+  </form>
+  <p class="small text-muted mt-3 mb-0">Telefono perso e niente codici di backup? Un altro amministratore può azzerare la
+    configurazione dal server: <code>manage.py reset_2fa &lt;utente&gt;</code>.</p>
+</div></div></div></div>
+{% endblock %}

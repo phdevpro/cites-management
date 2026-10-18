@@ -257,6 +257,7 @@ dependencies = [
     { name = "cryptography" },
     { name = "django" },
     { name = "django-csp" },
+    { name = "django-otp" },
     { name = "django-simple-history" },
     { name = "gunicorn" },
     { name = "openai" },
@@ -266,6 +267,7 @@ dependencies = [
     { name = "pypdf" },
     { name = "python-dateutil" },
     { name = "pyyaml" },
+    { name = "qrcode" },
     { name = "reportlab" },
     { name = "whitenoise" },
 ]
@@ -281,6 +283,7 @@ requires-dist = [
     { name = "cryptography", specifier = ">=50.0.2" },
     { name = "django", specifier = ">=5.1,<6" },
     { name = "django-csp", specifier = ">=4.0" },
+    { name = "django-otp", specifier = ">=1.7.5" },
     { name = "django-simple-history", specifier = ">=3.13.0" },
     { name = "gunicorn", specifier = ">=26.2.0" },
     { name = "openai", specifier = ">=3.35.1" },
@@ -290,6 +293,7 @@ requires-dist = [
     { name = "pypdf", specifier = ">=6.21.0" },
     { name = "python-dateutil", specifier = ">=2.9.0.post0" },
     { name = "pyyaml", specifier = ">=6.0.3" },
+    { name = "qrcode", specifier = ">=8.2" },
     { name = "reportlab", specifier = ">=5.0.1" },
     { name = "whitenoise", specifier = ">=6.12.0" },
 ]
@@ -397,6 +401,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/52/db/23567744dff2169aadb095f726088074476b24dfff5a759ffcf6389cf401/django_csp-4.0.tar.gz", hash = "sha256:b27010bb702eb20a3dad329178df2b61a2b82d338b70fbdc13c3a3bd28712833", size = 20028, upload-time = "2025-04-02T16:41:46.721Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e1/a4/736ab90ee527a23e194d1ce7358c6bcced66381ced83c28268b4aea236f7/django_csp-4.0-py3-none-any.whl", hash = "sha256:d5a0a05463a6b75a4f1fc1828c58c89af8db9364d09fc6e12f122b4d7f3d00dc", size = 25689, upload-time = "2025-04-02T16:41:45.689Z" },
+]
+
+[[package]]
+name = "django-otp"
+version = "1.7.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d0/e9/db4349d7a866e6d5153b31fa740b17f5893723715edf7d1673615d9f462c/django_otp-1.7.5.tar.gz", hash = "sha256:7f554d21dcd035550c3b8e3f154b1f422fee71fdc75c8a3bf96e42a2ea6dafcc", size = 79637, upload-time = "2026-10-16T14:48:48.98Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a3/bc/bda771669006e7e112bed31a330636ff0b3c3407b053c10c492368c35f6f/django_otp-1.7.5-py3-none-any.whl", hash = "sha256:475d4111e07d61616996f098d08d29884da6397273a11f53c1b8e8c75d27e1dc", size = 73805, upload-time = "2026-10-16T14:48:47.793Z" },
 ]
 
 [[package]]
@@ -1071,6 +1087,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/da/92/1446574745d74df0c92e6aa4a7b0b3130706a4142b2d1a5869f2eaa423c6/pyyaml-6.0.3-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:16249ee61e95f858e83976573de0f5b2893b3677ba71c9dd36b9cf8be9ac6d65", size = 829923, upload-time = "2025-09-25T21:32:54.537Z" },
     { url = "https://files.pythonhosted.org/packages/f0/7a/1c7270340330e575b92f397352af856a8c06f230aa3e76f86b39d01b416a/pyyaml-6.0.3-cp314-cp314t-win_amd64.whl", hash = "sha256:4ad1906908f2f5ae4e5a8ddfce73c320c2a1429ec52eafd27138b7f1cbe341c9", size = 174062, upload-time = "2025-09-25T21:32:55.767Z" },
     { url = "https://files.pythonhosted.org/packages/f1/12/de94a39c2ef588c7e6455cfbe7343d3b2dc9d6b6b2f40c4c6565744c873d/pyyaml-6.0.3-cp314-cp314t-win_arm64.whl", hash = "sha256:ebc55a14a21cb14062aa4162f906cd962b28e2e9ea38f9b4391244cd8de4ae0b", size = 149341, upload-time = "2025-09-25T21:32:56.828Z" },
+]
+
+[[package]]
+name = "qrcode"
+version = "8.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colorama", marker = "sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8f/b2/7fc2931bfae0af02d5f53b174e9cf701adbb35f39d69c2af63d4a39f81a9/qrcode-8.2.tar.gz", hash = "sha256:35c3f2a4172b33136ab9f6b3ef1c00260dd2f66f858f24d88418a015f446506c", size = 43317, upload-time = "2025-05-01T15:44:24.726Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/dd/b8/d2d6d731733f51684bbf76bf34dab3b70a9148e8f2cef2bb544fccec681a/qrcode-8.2-py3-none-any.whl", hash = "sha256:16e64e0716c14960108e85d853062c9e8bba5ca8252c0b4d0231b9df4060ff4f", size = 45986, upload-time = "2025-05-01T15:44:22.781Z" },
 ]
 
 [[package]]

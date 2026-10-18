@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Autenticazione a due fattori{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-6"><div class="card"><div class="card-body p-4">
+  <h1 class="h4"><i class="bi bi-shield-lock"></i> Attiva l'autenticazione a due fattori</h1>
+  <p class="small text-muted">Obbligatoria per gli amministratori. Usa un'app di autenticazione (es. Aegis, Google Authenticator,
+    Microsoft Authenticator, 1Password, Bitwarden).</p>
+  <ol class="small">
+    <li>Inquadra il QR code con l'app (oppure inserisci il codice segreto a mano).</li>
+    <li>Scrivi qui il codice a 6 cifre che l'app mostra.</li>
+  </ol>
+  <div class="text-center mb-3"><img src="{{ qr }}" alt="QR code per l'app di autenticazione" width="216" height="216"></div>
+  <p class="text-center small">Codice segreto: <code class="user-select-all">{{ secret }}</code></p>
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    {% include "_field.html" with field=form.token %}
+    <button class="btn btn-success w-100">Attiva</button>
+  </form>
+</div></div></div></div>
+{% endblock %}

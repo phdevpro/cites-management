@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Codici di backup{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-md-6"><div class="card border-warning"><div class="card-body p-4">
+  <h1 class="h4"><i class="bi bi-key"></i> Codici di backup</h1>
+  {% if codes %}
+    <p>Ognuno funziona <strong>una sola volta</strong>, al posto del codice dell'app se perdi il telefono.
+       Conservali fuori da questo server: vengono mostrati solo ora.</p>
+    <div class="bg-light border rounded p-3 mb-3"><div class="row row-cols-2 g-1 font-monospace text-center">
+      {% for c in codes %}<div class="col">{{ c }}</div>{% endfor %}
+    </div></div>
+    <div class="d-flex gap-2 mb-3">
+      <button type="button" class="btn btn-outline-secondary btn-sm" data-download-name="cites-codici-backup-2fa.txt"
+        data-download-text="CITES Manager – codici di backup 2FA ({{ user.username }})&#10;&#10;{% for c in codes %}{{ c }}&#10;{% endfor %}"><i class="bi bi-download"></i> Scarica</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" data-print><i class="bi bi-printer"></i> Stampa</button>
+    </div>
+    <a class="btn btn-success" href="{{ next }}">Ho salvato i codici, continua</a>
+  {% else %}
+    <p>Codici di backup ancora validi: <strong>{{ left }}</strong>.</p>
+    <form method="post" data-confirm="I codici attuali smetteranno di funzionare. Continuare?">{% csrf_token %}
+      <button class="btn btn-warning">Genera nuovi codici</button>
+    </form>
+  {% endif %}
+</div></div></div></div>
+{% endblock %}

@@ -34,3 +34,12 @@ class TermsAcceptanceAdmin(admin.ModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         return False
+
+
+# Never expose TOTP secrets / backup codes in the admin: reset a user's 2FA with `manage.py reset_2fa <username>`.
+for _model in ("TOTPDevice", "StaticDevice"):
+    from django.apps import apps as _apps
+
+    _cls = _apps.get_model("otp_totp" if _model == "TOTPDevice" else "otp_static", _model)
+    if admin.site.is_registered(_cls):
+        admin.site.unregister(_cls)

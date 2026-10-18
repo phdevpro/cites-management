@@ -13,6 +13,7 @@ dependencies = [
     "cryptography>=50.0.2",
     "django>=5.1,<6",
     "django-csp>=4.0",
+    "django-otp>=1.7.5",
     "django-simple-history>=3.13.0",
     "gunicorn>=26.2.0",
     "openai>=3.35.1",
@@ -22,6 +23,7 @@ dependencies = [
     "pypdf>=6.21.0",
     "python-dateutil>=2.9.0.post0",
     "pyyaml>=6.0.3",
+    "qrcode>=8.2",
     "reportlab>=5.0.1",
     "whitenoise>=6.12.0",
 ]

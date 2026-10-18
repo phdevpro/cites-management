@@ -35,6 +35,9 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.humanize",
     "simple_history",
+    "django_otp",
+    "django_otp.plugins.otp_totp",
+    "django_otp.plugins.otp_static",
     "apps.vault",
     "apps.accounts",
     "apps.species",
@@ -56,6 +59,8 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django_otp.middleware.OTPMiddleware",
+    "apps.accounts.otp.OTPGateMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "simple_history.middleware.HistoryRequestMiddleware",
@@ -242,3 +247,7 @@ else:
 SECURE_REFERRER_POLICY = "same-origin"
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 SECURITY_CONTACT = os.environ.get("SECURITY_CONTACT", "")  # mailto:… or https://…; defaults to LEGAL_EMAIL
+
+# Two-factor authentication (TOTP + backup codes): "staff" (default) = administrators, "all", or "none"
+OTP_REQUIRED_FOR = os.environ.get("OTP_REQUIRED_FOR", "staff")
+OTP_TOTP_ISSUER = SITE_NAME
