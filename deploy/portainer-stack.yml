@@ -25,7 +25,7 @@ services:
       DATABASE_URL: postgres://${DB_USERNAME}:${DB_PASSWORD}@cites-db:5432/${DB_DATABASE_NAME}
       TZ: Europe/Rome
     volumes:
-      - cites-media:/data
+      - ${MEDIA_LOCATION:-cites-media}:/data   # host/NFS path, or the named volume if unset
       - /etc/localtime:/etc/localtime:ro
     depends_on:
       cites-db:
