@@ -41,6 +41,32 @@
     {% empty %}<tr><td class="text-muted">Nessun esemplare collegato.</td></tr>{% endfor %}</table>
   </div></div>
   <div class="card mb-4"><div class="card-body">
+    <h2 class="h6"><i class="bi bi-envelope"></i> Email per l'ufficio CITES</h2>
+    {% if not decl.pdf %}<p class="small text-muted">Genera prima il PDF: va allegato alla mail.</p>{% endif %}
+    <div class="mb-2"><label class="form-label small mb-0" for="email-to">A</label>
+      <div class="input-group input-group-sm">
+        <input class="form-control" id="email-to" value="{{ email.to }}" readonly placeholder="PEC dell'ufficio non impostata">
+        <button type="button" class="btn btn-outline-secondary" data-copy="email-to"><i class="bi bi-clipboard"></i> Copia</button>
+      </div>
+      {% if not email.to %}<div class="form-text">Aggiungi la PEC di {{ email.office|default:"un ufficio CITES" }}{% if user.is_staff %} in <a href="{% url 'admin:accounts_citesoffice_changelist' %}">Admin → Uffici CITES</a>{% endif %} (o nel profilo detentore scegli l'ufficio giusto).</div>{% endif %}
+    </div>
+    <div class="mb-2"><label class="form-label small mb-0" for="email-subject">Oggetto</label>
+      <div class="input-group input-group-sm">
+        <input class="form-control" id="email-subject" value="{{ email.subject }}" readonly>
+        <button type="button" class="btn btn-outline-secondary" data-copy="email-subject"><i class="bi bi-clipboard"></i> Copia</button>
+      </div>
+    </div>
+    <div class="mb-2"><label class="form-label small mb-0" for="email-body">Testo</label>
+      <textarea class="form-control form-control-sm font-monospace" id="email-body" rows="12" readonly>{{ email.body }}</textarea>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <button type="button" class="btn btn-sm btn-success" data-copy="email-body"><i class="bi bi-clipboard"></i> Copia testo</button>
+      <a class="btn btn-sm btn-outline-primary" href="{{ email.mailto }}"><i class="bi bi-envelope-open"></i> Apri nel programma di posta</a>
+      {% if decl.pdf %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'declarations:download' decl.pk %}" target="_blank"><i class="bi bi-file-earmark-pdf"></i> PDF da allegare</a>{% endif %}
+    </div>
+    <p class="form-text mb-0">Il PDF va allegato a mano. Dopo l'invio usa "Segna come inviata" qui a destra.</p>
+  </div></div>
+  <div class="card mb-4"><div class="card-body">
     <h2 class="h6">Allegati</h2>
     <ul class="list-unstyled">{% for a in attachments %}<li><i class="bi bi-paperclip"></i> <a href="{{ a.file.url }}" target="_blank">{{ a.description|default:a.file.name }}</a> <span class="badge bg-light text-dark">{{ a.get_kind_display }}</span></li>{% empty %}<li class="text-muted">Nessuno</li>{% endfor %}</ul>
     {% if current_membership.can_edit %}

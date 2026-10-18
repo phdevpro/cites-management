@@ -20,6 +20,7 @@ from apps.pdfforms.render import output_options, render_declaration, render_pdf
 from apps.vault.storage import read_plain
 
 from . import services
+from .emailtext import build_email
 from .forms import (AttachmentForm, BirthForm, CompleteTransferForm, DeathForm, DeclarationMetaForm, LossForm,
                     NewbornFormSet, PaymentForm, PdfOptionsForm, ProtocolForm, SentForm, TransferForm)
 from .models import Declaration, Payment
@@ -72,6 +73,7 @@ def detail(request, pk):
         "complete_form": CompleteTransferForm(initial={"completed_on": timezone.localdate()}),
         "imported_files": decl.imported_files.all(),
         "spec": FORM_SPECS.get(decl.kind),
+        "email": build_email(decl),
     }
     return render(request, "declarations/detail.html", ctx)
 

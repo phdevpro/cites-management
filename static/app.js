@@ -91,6 +91,32 @@
       });
     });
 
+    // data-copy="<element id>": copy a field's text to the clipboard, with feedback on the button
+    document.querySelectorAll("[data-copy]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var el = document.getElementById(btn.dataset.copy);
+        if (!el) return;
+        var text = el.value !== undefined ? el.value : el.textContent;
+        var label = btn.innerHTML;
+        var done = function () {
+          btn.innerHTML = "✓ Copiato";
+          setTimeout(function () { btn.innerHTML = label; }, 1800);
+        };
+        var fallback = function () {  // plain-http setups, or clipboard permission denied
+          el.focus();
+          el.select();
+          var ok = false;
+          try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+          if (ok) { done(); } else { btn.innerHTML = "Seleziona e copia (Ctrl+C)"; setTimeout(function () { btn.innerHTML = label; }, 2500); }
+        };
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(text).then(done, fallback);
+        } else {
+          fallback();
+        }
+      });
+    });
+
     document.querySelectorAll("[data-print]").forEach(function (btn) {
       btn.addEventListener("click", function () { window.print(); });
     });
