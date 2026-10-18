@@ -190,3 +190,6 @@ LEGAL = {
     "clauses": "4, 5, 6, 9, 10, 11, 12, 15",
 }
 SITE_NAME = os.environ.get("SITE_NAME", "CITES Manager")
+
+# Import analysis (OCR) runs in a background thread so uploads return immediately
+IMPORT_BACKGROUND = os.environ.get("IMPORT_BACKGROUND", "1") == "1"

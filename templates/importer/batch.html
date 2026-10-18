@@ -1,7 +1,20 @@
 {% extends "base.html" %}
 {% load cites %}
+{% block title %}{{ batch }}{% endblock %}
 {% block content %}
+{% if queue %}<meta http-equiv="refresh" content="4">{% endif %}
 <h1 class="h4 mb-3">{{ batch }}</h1>
+{% if queue %}
+<div class="card mb-3"><div class="card-body">
+  <div class="d-flex justify-content-between small mb-1">
+    <span><span class="spinner-border spinner-border-sm text-success"></span> Analisi in corso (OCR delle scansioni: può richiedere alcuni minuti)…</span>
+    <span>{{ total }} file, {{ queue }} in coda</span>
+  </div>
+  <div class="progress" style="height:8px"><div class="progress-bar bg-success" style="width:{{ done_pct }}%"></div></div>
+  <p class="small text-muted mt-2 mb-0">Puoi chiudere questa pagina: l'analisi continua sul server finché resti connesso. Se si interrompe (es. riavvio del server):</p>
+  <form method="post" class="mt-1">{% csrf_token %}<button name="resume" value="1" class="btn btn-sm btn-outline-secondary">Riprendi analisi</button></form>
+</div></div>
+{% endif %}
 <form class="mb-3"><select name="status" class="form-select w-auto" onchange="this.form.submit()"><option value="">Tutti</option>{% for v,l in statuses %}<option value="{{ v }}" {% if request.GET.status == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></form>
 <div class="card"><div class="table-responsive"><table class="table table-sm table-hover mb-0">
 <thead><tr><th>File</th><th>Anno</th><th>Tipo rilevato</th><th>Affidabilità</th><th>Estrazione</th><th>Stato</th></tr></thead>

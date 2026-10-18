@@ -1,3 +1,4 @@
+import zipfile
 from datetime import date
 
 from django.contrib import messages
@@ -30,16 +31,25 @@ def index(request):
             batch = ImportBatch.objects.create(keeper=request.keeper, created_by=request.user,
                                                label=form.cleaned_data["label"])
             notes = []
-            for f in form.cleaned_data["files"]:
-                _, msg = services.add_file(batch, f, f.name, f.name)
-                if msg:
-                    notes.append(msg)
-            if form.cleaned_data["archive"]:
-                notes += services.add_zip(batch, form.cleaned_data["archive"])
+            try:
+                for f in form.cleaned_data["files"]:
+                    _, msg = services.add_file(batch, f, f.name, f.name, analyze_now=False)
+                    if msg:
+                        notes.append(msg)
+                if form.cleaned_data["archive"]:
+                    notes += services.add_zip(batch, form.cleaned_data["archive"], analyze_now=False)
+            except zipfile.BadZipFile:
+                messages.error(request, "Il file ZIP non è valido o è danneggiato.")
             for n in notes:
                 messages.warning(request, n)
-            messages.success(request, f"{batch.files.count()} file analizzati.")
+            count = batch.files.count()
+            if count:
+                services.analyze_in_background(batch.pk, request.vault)
+                messages.success(request, f"{count} file caricati e cifrati: analisi in corso.")
+            else:
+                messages.warning(request, "Nessun file nuovo da analizzare.")
             return redirect("importer:batch", pk=batch.pk)
+        messages.error(request, "Controlla i campi del modulo.")
     batches = ImportBatch.objects.filter(keeper=request.keeper)
     pending = ImportedFile.objects.filter(keeper=request.keeper, status__in=["parsed", "error"]).count()
     return render(request, "importer/index.html", {"form": form, "batches": batches, "pending": pending,
@@ -49,11 +59,22 @@ def index(request):
 def batch(request, pk):
     _guard(request, edit=False)
     b = get_object_or_404(ImportBatch, pk=pk, keeper=request.keeper)
+    if request.method == "POST" and "resume" in request.POST:
+        _guard(request)
+        services.requeue_stale(b.pk)
+        services.analyze_in_background(b.pk, request.vault)
+        messages.info(request, "Analisi ripresa.")
+        return redirect("importer:batch", pk=b.pk)
+    queue = b.files.filter(status__in=[ImportedFile.Status.PENDING, ImportedFile.Status.PROCESSING]).count()
+    total = b.files.count()
     files = b.files.all()
     status = request.GET.get("status")
     if status:
         files = files.filter(status=status)
-    return render(request, "importer/batch.html", {"batch": b, "files": files, "statuses": ImportedFile.Status.choices})
+    return render(request, "importer/batch.html", {
+        "batch": b, "files": files, "statuses": ImportedFile.Status.choices,
+        "queue": queue, "total": total, "done_pct": int(100 * (total - queue) / total) if total else 100,
+    })
 
 
 def _initial(f: ImportedFile):

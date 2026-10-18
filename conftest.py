@@ -16,6 +16,7 @@ PASSPHRASE = "test passphrase 123"
 def _vault_settings(settings, tmp_path):
     settings.VAULT_SCRYPT_N = 2 ** 10  # fast KDF in tests
     settings.MEDIA_ROOT = tmp_path / "media"
+    settings.IMPORT_BACKGROUND = False  # analyze synchronously in tests
 
 
 @pytest.fixture(autouse=True)

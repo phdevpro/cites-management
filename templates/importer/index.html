@@ -5,9 +5,9 @@
 <div class="col-lg-7">
   <div class="card mb-4"><div class="card-body">
     <p class="small text-muted">Carica i PDF delle denunce già presentate (SCT1/A, SCT1/B, SCT5, SCT3), le risposte dell'ufficio (es. <code>DC_1234 (10.100-1) DN n. 9 Testudo hermanni.pdf</code>), certificati, ricevute e scansioni. L'app riconosce il tipo, estrae i dati (campi modulo, testo o OCR) e ti propone cosa registrare: verifichi ogni file prima che entri in archivio.</p>
-    <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    <form method="post" enctype="multipart/form-data" id="upload-form">{% csrf_token %}
       {% include "_form.html" %}
-      <button class="btn btn-success">Carica e analizza</button>
+      <button class="btn btn-success" id="upload-btn">Carica e analizza</button>
     </form>
     <p class="small text-muted mt-3 mb-0">Cartella intera da riga di comando: <code>uv run manage.py import_archive "CITES Denuncia Tartarughe" --keeper {{ current_keeper.pk }} --user {{ user.username }}</code></p>
   </div></div>
@@ -25,4 +25,13 @@
 </div></div></div>
 </div>
 {% endblock %}
-{% block scripts %}{% include "_bootstrapify.html" %}{% endblock %}
+{% block scripts %}
+{% include "_bootstrapify.html" %}
+<script>
+document.getElementById('upload-form').addEventListener('submit', () => {
+  const btn = document.getElementById('upload-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Caricamento e cifratura dei file…';
+});
+</script>
+{% endblock %}

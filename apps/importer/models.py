@@ -41,6 +41,7 @@ class ImportBatch(models.Model):
 class ImportedFile(models.Model):
     class Status(models.TextChoices):
         PENDING = "pending", _("Da analizzare")
+        PROCESSING = "processing", _("In analisi")
         PARSED = "parsed", _("Da verificare")
         DONE = "done", _("Registrato")
         ARCHIVED = "archived", _("Solo archiviato")
@@ -54,6 +55,7 @@ class ImportedFile(models.Model):
     original_path = EncryptedCharField(max_length=500, blank=True)
     sha256 = models.CharField(max_length=64, db_index=True)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
+    updated_at = models.DateTimeField(auto_now=True)
     detected_kind = models.CharField(_("tipo rilevato"), max_length=8, choices=list(KINDS.items()), default="OTHER")
     confidence = models.FloatField(default=0)
     method = models.CharField(max_length=10, blank=True)

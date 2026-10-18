@@ -1,22 +1,29 @@
 import io
+import logging
 import re
 import tempfile
+import threading
 import zipfile
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from django.core.files.base import ContentFile, File
-from django.db import IntegrityError, transaction
+from django.conf import settings
+from django.db import IntegrityError, connection, transaction
+from django.utils import timezone
 
 from apps.declarations import services as decl_services
 from apps.declarations.models import Attachment, Declaration, Payment
 from apps.registry.models import CitesDocument, Specimen
 from apps.species.models import Species
+from apps.vault.context import KeyRing, using
 from apps.vault.storage import read_plain
 
 from .extract import IMAGE_EXT, PDF_EXT, SHEET_EXT, extract
 from .models import ImportedFile, file_sha256
 from .parse import parse
+
+log = logging.getLogger(__name__)
 
 ALLOWED_EXT = PDF_EXT | IMAGE_EXT | SHEET_EXT | {".docx", ".odt", ".odg"}
 
@@ -26,8 +33,9 @@ def _year_hint(path: str) -> int | None:
     return int(m.group(1)) if m else None
 
 
-def add_file(batch, django_file, original_name: str, original_path: str = "") -> tuple[ImportedFile | None, str]:
-    """Store a file in the batch (deduplicated per keeper by SHA-256) and analyze it."""
+def add_file(batch, django_file, original_name: str, original_path: str = "",
+             analyze_now: bool = True) -> tuple[ImportedFile | None, str]:
+    """Store a file in the batch (deduplicated per keeper) and, unless deferred, analyze it."""
     ext = Path(original_name).suffix.lower()
     if ext not in ALLOWED_EXT:
         return None, f"{original_name}: formato non supportato"
@@ -44,11 +52,12 @@ def add_file(batch, django_file, original_name: str, original_path: str = "") ->
         imported.save()
     except IntegrityError:
         return None, f"{original_name}: già importato"
-    analyze(imported)
+    if analyze_now:
+        analyze(imported)
     return imported, ""
 
 
-def add_zip(batch, uploaded) -> list[str]:
+def add_zip(batch, uploaded, analyze_now: bool = True) -> list[str]:
     msgs = []
     with zipfile.ZipFile(uploaded) as zf:
         for info in zf.infolist():
@@ -56,7 +65,7 @@ def add_zip(batch, uploaded) -> list[str]:
                 continue
             data = zf.read(info)
             name = Path(info.filename).name
-            _, msg = add_file(batch, ContentFile(data, name=name), name, info.filename)
+            _, msg = add_file(batch, ContentFile(data, name=name), name, info.filename, analyze_now=analyze_now)
             if msg:
                 msgs.append(msg)
     return msgs
@@ -70,6 +79,51 @@ def add_path(batch, root: Path) -> list[str]:
         if msg:
             msgs.append(msg)
     return msgs
+
+
+STALE_AFTER = timedelta(minutes=10)
+
+
+def analyze_pending(batch_id: int) -> int:
+    """Analyze the batch's pending files one by one. Each file is claimed atomically, so several
+    workers (or a resumed run) never process the same file twice. Returns the number analyzed."""
+    done = 0
+    while True:
+        f = ImportedFile.objects.filter(batch_id=batch_id, status=ImportedFile.Status.PENDING).order_by("pk").first()
+        if f is None:
+            return done
+        claimed = ImportedFile.objects.filter(pk=f.pk, status=ImportedFile.Status.PENDING).update(
+            status=ImportedFile.Status.PROCESSING, updated_at=timezone.now())
+        if claimed:
+            analyze(ImportedFile.objects.get(pk=f.pk))
+            done += 1
+
+
+def requeue_stale(batch_id: int) -> int:
+    """Files left 'in analisi' by a restarted worker go back to the queue."""
+    return ImportedFile.objects.filter(
+        batch_id=batch_id, status=ImportedFile.Status.PROCESSING, updated_at__lt=timezone.now() - STALE_AFTER,
+    ).update(status=ImportedFile.Status.PENDING)
+
+
+def analyze_in_background(batch_id: int, ring) -> None:
+    """OCR can take minutes: run it outside the request. The thread gets a copy of the unlocked
+    key ring (kept only in this process's memory) to read and write the encrypted files."""
+    if not getattr(settings, "IMPORT_BACKGROUND", True):
+        analyze_pending(batch_id)
+        return
+    keys = KeyRing(private_key=ring.private_key, keys=dict(ring.keys), keeper_keys=dict(ring.keeper_keys))
+
+    def run():
+        try:
+            with using(keys):
+                analyze_pending(batch_id)
+        except Exception:
+            log.exception("import analysis failed for batch %s", batch_id)
+        finally:
+            connection.close()
+
+    threading.Thread(target=run, name=f"import-batch-{batch_id}", daemon=True).start()
 
 
 def analyze(imported: ImportedFile) -> ImportedFile:
