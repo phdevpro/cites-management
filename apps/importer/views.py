@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from apps.declarations.models import Declaration
 from apps.registry.models import Specimen
@@ -160,3 +161,34 @@ def sheet_import(request):
         messages.success(request, f"{count} righe importate.")
         return redirect("registry:specimen_list")
     return redirect("importer:index")
+
+
+def _ids(request, name="ids"):
+    return [int(x) for x in request.POST.getlist(name) if x.isdigit()]
+
+
+@require_POST
+def delete_batches(request):
+    """Delete whole imports: the selected ones, or all of them."""
+    _guard(request)
+    batches = ImportBatch.objects.filter(keeper=request.keeper)
+    if "all" not in request.POST:
+        batches = batches.filter(pk__in=_ids(request))
+    n_batches = batches.count()
+    n_files = services.delete_batches(batches)
+    messages.success(request, f"Eliminati {n_batches} import ({n_files} file).")
+    return redirect("importer:index")
+
+
+@require_POST
+def delete_files(request, pk):
+    """Delete selected files of an import (or the whole import)."""
+    _guard(request)
+    b = get_object_or_404(ImportBatch, pk=pk, keeper=request.keeper)
+    if "whole" in request.POST:
+        n = services.delete_batches([b])
+        messages.success(request, f"Import eliminato ({n} file).")
+        return redirect("importer:index")
+    n = services.delete_imports(b.files.filter(pk__in=_ids(request)))
+    messages.success(request, f"Eliminati {n} file.")
+    return redirect("importer:batch", pk=b.pk)

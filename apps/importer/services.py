@@ -9,7 +9,7 @@ from pathlib import Path
 
 from django.core.files.base import ContentFile, File
 from django.conf import settings
-from django.db import IntegrityError, connection, transaction
+from django.db import DatabaseError, IntegrityError, connection, transaction
 from django.utils import timezone
 
 from apps.declarations import services as decl_services
@@ -95,8 +95,10 @@ def analyze_pending(batch_id: int) -> int:
         claimed = ImportedFile.objects.filter(pk=f.pk, status=ImportedFile.Status.PENDING).update(
             status=ImportedFile.Status.PROCESSING, updated_at=timezone.now())
         if claimed:
-            analyze(ImportedFile.objects.get(pk=f.pk))
-            done += 1
+            current = ImportedFile.objects.filter(pk=f.pk).first()
+            if current is not None:
+                analyze(current)
+                done += 1
 
 
 def requeue_stale(batch_id: int) -> int:
@@ -126,6 +128,27 @@ def analyze_in_background(batch_id: int, ring) -> None:
     threading.Thread(target=run, name=f"import-batch-{batch_id}", daemon=True).start()
 
 
+@transaction.atomic
+def delete_imports(files) -> int:
+    """Delete imported files (rows + encrypted files on disk). Records already registered from them
+    (declarations, CITES documents, payments) keep their own copies and are not touched."""
+    files = list(files)
+    for f in files:
+        if f.file and f.file.name:
+            transaction.on_commit(lambda s=f.file.storage, n=f.file.name: s.delete(n))
+    ImportedFile.objects.filter(pk__in=[f.pk for f in files]).delete()
+    return len(files)
+
+
+@transaction.atomic
+def delete_batches(batches) -> int:
+    count = 0
+    for b in batches:
+        count += delete_imports(b.files.all())
+        b.delete()
+    return count
+
+
 def analyze(imported: ImportedFile) -> ImportedFile:
     ext = Path(imported.original_name).suffix.lower()
     known = list(Species.objects.values_list("scientific_name", flat=True))
@@ -153,7 +176,13 @@ def analyze(imported: ImportedFile) -> ImportedFile:
     except Exception as exc:  # keep the file, let the user enter data by hand
         imported.status = ImportedFile.Status.ERROR
         imported.error = str(exc)
-    imported.save()
+    try:
+        # update only: if the user deleted the file meanwhile, don't recreate the row
+        with transaction.atomic():
+            imported.save(update_fields=["text", "method", "detected_kind", "confidence", "parsed", "status",
+                                         "error", "updated_at"])
+    except DatabaseError:
+        log.info("imported file %s deleted during analysis", imported.pk)
     return imported
 
 

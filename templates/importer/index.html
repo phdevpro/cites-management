@@ -21,12 +21,24 @@
 </div>
 <div class="col-lg-5"><div class="card"><div class="card-body">
   <h2 class="h6">Importazioni {% if pending %}<span class="badge bg-warning text-dark">{{ pending }} file da verificare</span>{% endif %}</h2>
-  <ul class="list-group list-group-flush">{% for b in batches %}<li class="list-group-item"><a href="{% url 'importer:batch' b.pk %}">{{ b }}</a> <small class="text-muted">{{ b.files.count }} file</small></li>{% empty %}<li class="list-group-item text-muted">Nessuna importazione.</li>{% endfor %}</ul>
+  {% if batches %}
+  <form method="post" action="{% url 'importer:delete_batches' %}">{% csrf_token %}
+    <ul class="list-group list-group-flush mb-2">
+      <li class="list-group-item small"><input type="checkbox" class="form-check-input me-2" id="select-all"> <label for="select-all">Seleziona tutti</label></li>
+      {% for b in batches %}<li class="list-group-item"><input type="checkbox" class="form-check-input me-2 row-check" name="ids" value="{{ b.pk }}"> <a href="{% url 'importer:batch' b.pk %}">{{ b }}</a> <small class="text-muted">{{ b.files.count }} file · {{ b.created_at|date:"d/m/Y H:i" }}</small></li>{% endfor %}
+    </ul>
+    {% if current_membership.can_edit %}
+    <button class="btn btn-sm btn-outline-danger" onclick="return confirmDelete('gli import selezionati')"><i class="bi bi-trash"></i> Elimina selezionati</button>
+    <button class="btn btn-sm btn-danger" name="all" value="1" onclick="return confirmDelete('TUTTI gli import ({{ batches|length }})')"><i class="bi bi-trash"></i> Elimina tutti</button>
+    {% endif %}
+  </form>
+  {% else %}<p class="text-muted mb-0">Nessuna importazione.</p>{% endif %}
 </div></div></div>
 </div>
 {% endblock %}
 {% block scripts %}
 {% include "_bootstrapify.html" %}
+{% include "importer/_delete_js.html" %}
 <script>
 document.getElementById('upload-form').addEventListener('submit', () => {
   const btn = document.getElementById('upload-btn');
